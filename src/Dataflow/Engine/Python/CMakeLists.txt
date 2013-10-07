@@ -34,6 +34,7 @@ SET(SCIRunPythonAPI_HEADERS
   NetworkEditorPythonAPI.h
   NetworkEditorPythonInterface.h
   SCIRunPythonModule.h
+  share.h
 )
 
 ADD_LIBRARY(SCIRunPythonAPI 

@@ -71,7 +71,7 @@ NetworkEditor::NetworkEditor(boost::shared_ptr<CurrentModuleSelection> moduleSel
   setScene(scene_);
   setDragMode(QGraphicsView::RubberBandDrag);
   setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-  setContextMenuPolicy(Qt::ActionsContextMenu);
+  //setContextMenuPolicy(Qt::ActionsContextMenu);
 
   createActions();
 
@@ -158,6 +158,16 @@ void NetworkEditor::duplicateModule(const SCIRun::Dataflow::Networks::ModuleHand
   controller_->duplicateModule(module);
 }
 
+void NetworkEditor::connectNewModule(const SCIRun::Dataflow::Networks::ModuleHandle& moduleToConnectTo, const SCIRun::Dataflow::Networks::PortDescriptionInterface* portToConnect, const std::string& newModuleName)
+{
+  auto widget = findById(scene_->items(), moduleToConnectTo->get_id());
+  QPointF increment(0, portToConnect->isInput() ? -110 : 110);
+  lastModulePosition_ = widget->scenePos() + increment;
+
+  controller_->connectNewModule(moduleToConnectTo, portToConnect, newModuleName);
+}
+
+
 namespace 
 {
   QPointF moduleAddIncrement(20,90);
@@ -166,6 +176,7 @@ namespace
 void NetworkEditor::setupModuleWidget(ModuleWidget* module)
 {
   ModuleProxyWidget* proxy = new ModuleProxyWidget(module);
+
   connect(module, SIGNAL(removeModule(const SCIRun::Dataflow::Networks::ModuleId&)), controller_.get(), SLOT(removeModule(const SCIRun::Dataflow::Networks::ModuleId&)));
   connect(module, SIGNAL(removeModule(const SCIRun::Dataflow::Networks::ModuleId&)), this, SIGNAL(modified()));
   connect(module, SIGNAL(requestConnection(const SCIRun::Dataflow::Networks::PortDescriptionInterface*, const SCIRun::Dataflow::Networks::PortDescriptionInterface*)), 
@@ -177,6 +188,8 @@ void NetworkEditor::setupModuleWidget(ModuleWidget* module)
   connect(module, SIGNAL(connectionDeleted(const SCIRun::Dataflow::Networks::ConnectionId&)), 
     this, SIGNAL(connectionDeleted(const SCIRun::Dataflow::Networks::ConnectionId&)));
   connect(module, SIGNAL(connectionDeleted(const SCIRun::Dataflow::Networks::ConnectionId&)), this, SIGNAL(modified()));
+  connect(module, SIGNAL(connectNewModule(const SCIRun::Dataflow::Networks::ModuleHandle&, const SCIRun::Dataflow::Networks::PortDescriptionInterface*, const std::string&)), 
+    this, SLOT(connectNewModule(const SCIRun::Dataflow::Networks::ModuleHandle&, const SCIRun::Dataflow::Networks::PortDescriptionInterface*, const std::string&)));
   
   module->getModule()->get_state()->connect_state_changed(boost::bind(&NetworkEditor::modified, this));
   
@@ -196,7 +209,7 @@ void NetworkEditor::setupModuleWidget(ModuleWidget* module)
   connect(this, SIGNAL(defaultNotePositionChanged(NotePosition)), proxy, SLOT(setDefaultNotePosition(NotePosition)));
   proxy->setDefaultNotePosition(defaultNotePositionGetter_->position());
   proxy->createPortPositionProviders();
-
+  
   scene_->addItem(proxy);
 
   scene_->clearSelection();
@@ -389,16 +402,6 @@ void NetworkEditor::createActions()
   //exitAction_ = new QAction(tr("E&xit"), this);
   //exitAction_->setShortcut(tr("Ctrl+Q"));
   //connect(exitAction_, SIGNAL(triggered()), this, SLOT(close()));
-
-  //addNodeAction_ = new QAction(tr("Add &Module"), this);
-  //addNodeAction_->setIcon(QIcon(":/images/node.png"));
-  //addNodeAction_->setShortcut(tr("Ctrl+N"));
-  //connect(addNodeAction_, SIGNAL(triggered()), this, SLOT(addModule()));
-
-  //addLinkAction_ = new QAction(tr("Add &Connection"), this);
-  //addLinkAction_->setIcon(QIcon(":/images/link.png"));
-  //addLinkAction_->setShortcut(tr("Ctrl+L"));
-  //connect(addLinkAction_, SIGNAL(triggered()), this, SLOT(addLink()));
 
   deleteAction_ = new QAction(tr("&Delete selected objects"), this);
   deleteAction_->setIcon(QIcon(":/images/delete.png"));
@@ -622,6 +625,15 @@ QPixmap NetworkEditor::sceneGrab()
 {
   //TODO: this approach may not be able to show the hidden parts of the network.
   return QPixmap::grabWidget(this);
+}
+
+void NetworkEditor::selectAll()
+{
+  Q_FOREACH(QGraphicsItem* item, scene_->items())
+  {
+    if (ModuleProxyWidget* mpw = dynamic_cast<ModuleProxyWidget*>(item))
+      mpw->setSelected(true);
+  }
 }
 
 NetworkEditor::~NetworkEditor()

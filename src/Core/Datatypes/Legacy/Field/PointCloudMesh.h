@@ -33,26 +33,24 @@
 //! Need to fix this and couple it sci-defs
 #include <Core/Datatypes/Legacy/Field/MeshSupport.h>
 
-#include <Core/Containers/SearchGridT.h>
+#include <Core/Persistent/PersistentSTL.h>
+#include <Core/GeometryPrimitives/SearchGridT.h>
 #include <Core/Containers/StackVector.h>
-#include <Core/Containers/LockingHandle.h>
-#include <Core/Containers/Handle.h>
 
 #include <Core/GeometryPrimitives/Transform.h>
 #include <Core/GeometryPrimitives/BBox.h>
 #include <Core/GeometryPrimitives/Point.h>
 
+#include <Core/Thread/Mutex.h>
 #include <Core/Basis/Locate.h>
 #include <Core/Basis/Constant.h>
 
+#include <Core/Datatypes/Mesh/VirtualMeshFacade.h>
 #include <Core/Datatypes/Legacy/Field/Mesh.h>
 #include <Core/Datatypes/Legacy/Field/VMesh.h>
 #include <Core/Datatypes/Legacy/Field/FieldIterator.h>
 #include <Core/Datatypes/Legacy/Field/FieldRNG.h>
 
-#include <float.h>
-
-//! Incude needed for Windows: declares SCISHARE
 #include <Core/Datatypes/Legacy/Field/share.h>
 
 namespace SCIRun {
@@ -65,8 +63,8 @@ namespace SCIRun {
 template <class Basis> class PointCloudMesh;
 
 //! make sure any other mesh other than the preinstantiate ones
-//! returns no virtual interface. Altering this behaviour will allow
-//! for dynamically compiling the interfae if needed.
+//! returns no virtual interface. Altering this behavior will allow
+//! for dynamically compiling the interface if needed.
 
 template<class MESH>
 VMesh* CreateVPointCloudMesh(MESH*) { return (0); }
@@ -74,7 +72,7 @@ VMesh* CreateVPointCloudMesh(MESH*) { return (0); }
 //! Declare that these can be found in a library that is already
 //! precompiled. So dynamic compilation will not instantiate them again.
 #if (SCIRUN_POINTCLOUD_SUPPORT > 0)
-SCISHARE VMesh* CreateVPointCloudMesh(PointCloudMesh<ConstantBasis<Point> >* mesh);
+SCISHARE VMesh* CreateVPointCloudMesh(PointCloudMesh<Core::Basis::ConstantBasis<Core::Geometry::Point> >* mesh);
 
 #endif
 /////////////////////////////////////////////////////
@@ -98,7 +96,7 @@ public:
   typedef SCIRun::size_type             size_type;
   typedef SCIRun::mask_type             mask_type; 
 
-  typedef LockingHandle<PointCloudMesh<Basis> > handle_type;
+  typedef boost::shared_ptr<PointCloudMesh<Basis> > handle_type;
   typedef Basis                                 basis_type;
 
   //! Index and Iterator types required for Mesh Concept.
@@ -158,7 +156,7 @@ public:
     }
 
     inline
-    const Point &node0() const 
+    const Core::Geometry::Point &node0() const 
     {
       return mesh_.points_[index_];
     }
@@ -179,13 +177,18 @@ public:
   
   //! Clone function for detaching the mesh and automatically generating
   //! a new version if needed.
-  virtual PointCloudMesh *clone() { return new PointCloudMesh(*this); }
+  virtual PointCloudMesh *clone() const { return new PointCloudMesh(*this); }
   
   //! Destructor
   virtual ~PointCloudMesh();
 
   //! Access point to virtual interface
-  virtual VMesh* vmesh() { return (vmesh_.get_rep()); }
+  virtual VMesh* vmesh() { return (vmesh_.get()); }
+
+  virtual MeshFacadeHandle getFacade() const
+  {
+    return boost::make_shared<Core::Datatypes::VirtualMeshFacade<VMesh>>(vmesh_);
+  }
 
   //! This one should go at some point, should be reroute throught the
   //! virtual interface
@@ -204,14 +207,14 @@ public:
     { return (Mesh::UNSTRUCTURED | Mesh::IRREGULAR); }
 
   //! Get the bounding box of the field
-  virtual BBox get_bounding_box() const;
+  virtual Core::Geometry::BBox get_bounding_box() const;
   
   //! Return the transformation that takes a 0-1 space bounding box 
   //! to the current bounding box of this mesh.  
-  virtual void get_canonical_transform(Transform &t) const;
+  virtual void get_canonical_transform(Core::Geometry::Transform &t) const;
 
-  //! Transform a field (transform all nodes using this transformation matrix)  
-  virtual void transform(const Transform &t);
+  //! Core::Geometry::Transform a field (transform all nodes using this transformation matrix)  
+  virtual void transform(const Core::Geometry::Transform &t);
 
   //! Check whether mesh can be altered by adding nodes or elements
   virtual bool is_editable() const { return true; }
@@ -321,7 +324,11 @@ public:
   //! get the parent element(s) of the given index
   void get_elems(typename Elem::array_type &result,
                  typename Node::index_type idx) const
-    { result.clear(); result.push_back(idx); }
+  { 
+  //    result.clear(); 
+  //    result.push_back(idx); 
+    result[0] = idx;
+  }
   void get_elems(typename Elem::array_type&,
                  typename Edge::index_type) const
     { ASSERTFAIL("PointCloudMesh: get_elems has not been implemented for edges"); }
@@ -367,13 +374,13 @@ public:
 
 
   //! get the center point (in object space) of an element
-  void get_center(Point &p, typename Node::index_type i) const 
+  void get_center(Core::Geometry::Point &p, typename Node::index_type i) const 
     { p = points_[i]; }
-  void get_center(Point &, typename Edge::index_type) const
+  void get_center(Core::Geometry::Point &, typename Edge::index_type) const
     { ASSERTFAIL("PointCloudMesh: get_center has not been implemented for edges"); }
-  void get_center(Point &, typename Face::index_type) const
+  void get_center(Core::Geometry::Point &, typename Face::index_type) const
     { ASSERTFAIL("PointCloudMesh: get_center has not been implemented for faces"); }
-  void get_center(Point &, typename Cell::index_type) const
+  void get_center(Core::Geometry::Point &, typename Cell::index_type) const
     { ASSERTFAIL("PointCloudMesh: get_center has not been implemented for cells"); }
 
   //! Get the size of an elemnt (length, area, volume)
@@ -403,47 +410,47 @@ public:
     { array.resize(0); return (false); }
 
   //! Locate a point in a mesh, find which is the closest node
-  bool locate(typename Node::index_type &n, const Point &p) const
+  bool locate(typename Node::index_type &n, const Core::Geometry::Point &p) const
     { return (locate_node(n,p)); }
-  bool locate(typename Edge::index_type &, const Point &) const
+  bool locate(typename Edge::index_type &, const Core::Geometry::Point &) const
     { return (false); }
-  bool locate(typename Face::index_type &, const Point &) const
+  bool locate(typename Face::index_type &, const Core::Geometry::Point &) const
     { return (false); }
-  bool locate(typename Cell::index_type &, const Point &) const
+  bool locate(typename Cell::index_type &, const Core::Geometry::Point &) const
     { return (false); }
 
   template<class ARRAY>
-  bool locate(typename Node::index_type &n, ARRAY& coords, const Point &p) const
+  bool locate(typename Node::index_type &n, ARRAY& coords, const Core::Geometry::Point &p) const
     { coords.resize(0); return (locate_node(n,p)); }
 
   //! These should become obsolete soon, they do not follow the concept
   //! of the basis functions....
-  int get_weights(const Point &p, typename Node::array_type &l, double *w);
-  int get_weights(const Point&, typename Edge::array_type&, double*)
+  int get_weights(const Core::Geometry::Point &p, typename Node::array_type &l, double *w);
+  int get_weights(const Core::Geometry::Point&, typename Edge::array_type&, double*)
     { ASSERTFAIL("PointCloudField: get_weights for edges isn't supported"); }
-  int get_weights(const Point&, typename Face::array_type&, double*)
+  int get_weights(const Core::Geometry::Point&, typename Face::array_type&, double*)
     { ASSERTFAIL("PointCloudField: get_weights for faces isn't supported"); }
-  int get_weights(const Point&, typename Cell::array_type&, double*)
+  int get_weights(const Core::Geometry::Point&, typename Cell::array_type&, double*)
     { ASSERTFAIL("PointCloudField: get_weights for cells isn't supported"); }
 
 
-  void get_point(Point &p, typename Node::index_type i) const
+  void get_point(Core::Geometry::Point &p, typename Node::index_type i) const
     { get_center(p,i); }
-  void set_point(const Point &p, typename Node::index_type i)
+  void set_point(const Core::Geometry::Point &p, typename Node::index_type i)
     { points_[i] = p; }
-  void get_random_point(Point &p, const typename Elem::index_type i,
+  void get_random_point(Core::Geometry::Point &p, const typename Elem::index_type i,
                         FieldRNG& /*rng*/) const
     { get_center(p, i); }
 
-  void get_normal(Vector&, typename Node::index_type) const
+  void get_normal(Core::Geometry::Vector&, typename Node::index_type) const
     { ASSERTFAIL("PointCloudMesh: this mesh type does not have node normals."); }
   template<class VECTOR>
-  void get_normal(Vector&, VECTOR &, typename Elem::index_type, unsigned int) const
+  void get_normal(Core::Geometry::Vector&, VECTOR &, typename Elem::index_type, unsigned int) const
     { ASSERTFAIL("PointCloudMesh: this mesh type does not have element normals."); }
 
   //! use these to build up a new PointCloudField mesh
-  typename Node::index_type add_node(const Point &p) { return add_point(p); }
-  typename Node::index_type add_point(const Point &p);
+  typename Node::index_type add_node(const Core::Geometry::Point &p) { return add_point(p); }
+  typename Node::index_type add_point(const Core::Geometry::Point &p);
   
   template <class ARRAY>
   typename Elem::index_type add_elem(ARRAY a)
@@ -465,7 +472,7 @@ public:
   //! This function uses a couple of newton iterations to find the local
   //! coordinate of a point
   template<class VECTOR, class INDEX>
-  bool get_coords(VECTOR &coords, const Point& /*p*/, INDEX /*idx*/) const
+  bool get_coords(VECTOR &coords, const Core::Geometry::Point& /*p*/, INDEX /*idx*/) const
   {
     coords.resize(1);
     coords[0] = 0.0;
@@ -475,7 +482,7 @@ public:
   //! Find the location in the global coordinate system for a local coordinate
   //! This function is the opposite of get_coords.
   template<class VECTOR, class INDEX>
-  void interpolate(Point &pt, const VECTOR& /*coords*/, INDEX idx) const
+  void interpolate(Core::Geometry::Point &pt, const VECTOR& /*coords*/, INDEX idx) const
   {
     get_center(pt, typename Node::index_type(idx));
   }
@@ -559,7 +566,7 @@ public:
   //! Find closest node
   //! Loop over all nodes to see which is the closest
   template <class INDEX>
-  bool locate_node(INDEX &node, const Point &p) const
+  bool locate_node(INDEX &node, const Core::Geometry::Point &p) const
   {
     //! If there are no nodes, we cannot find a closest one
     typename Node::size_type sz; size(sz);
@@ -621,7 +628,7 @@ public:
 
                 while (it != eit)
                 {
-                  const Point point = points_[*it];
+                  const Core::Geometry::Point point = points_[*it];
                   const double dist = (p-point).length2();
 
                   if (dist < dmin) 
@@ -650,7 +657,7 @@ public:
   //! Find whether we are inside the element
   //! If we find an element we return true
   template <class INDEX>
-  bool locate_elem(INDEX &idx, const Point &p) const
+  bool locate_elem(INDEX &idx, const Core::Geometry::Point &p) const
   {
     typename Elem::size_type sz; size(sz);
     
@@ -681,7 +688,7 @@ public:
   }
 
   template <class ARRAY>
-  inline bool locate_elems(ARRAY &array, const BBox &b) const
+  inline bool locate_elems(ARRAY &array, const Core::Geometry::BBox &b) const
   {
   
     ASSERTMSG(synchronized_ & Mesh::ELEM_LOCATE_E,
@@ -713,8 +720,8 @@ public:
 
 
   template <class INDEX> 
-  bool find_closest_node(double& pdist, Point& result, 
-                         INDEX &node, const Point &p) const
+  bool find_closest_node(double& pdist, Core::Geometry::Point& result, 
+                         INDEX &node, const Core::Geometry::Point &p) const
   {
     return(find_closest_node(pdist,result,node,p,-1.0));
   }
@@ -722,8 +729,8 @@ public:
 
   //! Closest node and the location
   template <class INDEX> 
-  bool find_closest_node(double& pdist, Point& result, 
-                         INDEX &node, const Point &p, double maxdist) const
+  bool find_closest_node(double& pdist, Core::Geometry::Point& result, 
+                         INDEX &node, const Core::Geometry::Point &p, double maxdist) const
   {
     if (maxdist < 0.0) maxdist = DBL_MAX; else maxdist = maxdist*maxdist;
     typename Node::size_type sz; size(sz);
@@ -790,7 +797,7 @@ public:
 
                 while (it != eit)
                 {
-                  const Point point = points_[*it];
+                  const Core::Geometry::Point point = points_[*it];
                   const double dist  = (p-point).length2();
 
                   if (dist < dmin) 
@@ -828,7 +835,7 @@ public:
 
 
   template <class ARRAY>
-  bool find_closest_nodes(ARRAY &nodes, const Point &p, double maxdist) const
+  bool find_closest_nodes(ARRAY &nodes, const Core::Geometry::Point &p, double maxdist) const
   {
     nodes.clear();
     
@@ -843,8 +850,8 @@ public:
     // Convert to grid coordinates.
     index_type bi, bj, bk, ei, ej, ek;
 
-    Point max = p+Vector(maxdist,maxdist,maxdist);
-    Point min = p+Vector(-maxdist,-maxdist,-maxdist);
+    Core::Geometry::Point max = p+Core::Geometry::Vector(maxdist,maxdist,maxdist);
+    Core::Geometry::Point min = p+Core::Geometry::Vector(-maxdist,-maxdist,-maxdist);
 
     grid_->unsafe_locate(bi, bj, bk, min);
     grid_->unsafe_locate(ei, ej, ek, max);
@@ -873,7 +880,7 @@ public:
 
             while (it != eit)
             {
-              const Point point = points_[*it];
+              const Core::Geometry::Point point = points_[*it];
               const double dist  = (p-point).length2();
 
               if (dist < maxdist2) 
@@ -892,7 +899,7 @@ public:
 
 
  template <class ARRAY1, class ARRAY2>
-  bool find_closest_nodes(ARRAY1 &distances, ARRAY2 &nodes, const Point &p, double maxdist) const
+  bool find_closest_nodes(ARRAY1 &distances, ARRAY2 &nodes, const Core::Geometry::Point &p, double maxdist) const
   {
     nodes.clear();
     distances.clear();
@@ -908,8 +915,8 @@ public:
     // Convert to grid coordinates.
     index_type bi, bj, bk, ei, ej, ek;
 
-    Point max = p+Vector(maxdist,maxdist,maxdist);
-    Point min = p+Vector(-maxdist,-maxdist,-maxdist);
+    Core::Geometry::Point max = p+Core::Geometry::Vector(maxdist,maxdist,maxdist);
+    Core::Geometry::Point min = p+Core::Geometry::Vector(-maxdist,-maxdist,-maxdist);
 
     grid_->unsafe_locate(bi, bj, bk, min);
     grid_->unsafe_locate(ei, ej, ek, max);
@@ -938,7 +945,7 @@ public:
 
             while (it != eit)
             {
-              const Point point = points_[*it];
+              const Core::Geometry::Point point = points_[*it];
               const double dist  = (p-point).length2();
 
               if (dist < maxdist2) 
@@ -959,10 +966,10 @@ public:
 
   template <class INDEX, class ARRAY> 
   bool find_closest_elem(double& pdist, 
-                         Point& result,
+                         Core::Geometry::Point& result,
                          ARRAY& coords, 
                          INDEX &elem, 
-                         const Point &p) const
+                         const Core::Geometry::Point &p) const
   {
     return (find_closest_elem(pdist,result,coords,elem,p,-1.0));
   }
@@ -970,10 +977,10 @@ public:
 
   template <class INDEX, class ARRAY> 
   bool find_closest_elem(double& pdist, 
-                         Point& result,
+                         Core::Geometry::Point& result,
                          ARRAY& coords, 
                          INDEX &elem, 
-                         const Point &p,
+                         const Core::Geometry::Point &p,
                          double maxdist) const
   {
     if (maxdist < 0.0) maxdist = DBL_MAX; else maxdist = maxdist*maxdist;
@@ -1042,7 +1049,7 @@ public:
 
                 while (it != eit)
                 {
-                  const Point point = points_[*it];
+                  const Core::Geometry::Point point = points_[*it];
                   const double dist  = (p-point).length2();
 
                   if (dist < dmin) 
@@ -1081,17 +1088,17 @@ public:
 
   template <class INDEX>
   bool find_closest_elem(double& pdist, 
-                         Point &result, 
+                         Core::Geometry::Point &result, 
                          INDEX &elem, 
-                         const Point &p) const
+                         const Core::Geometry::Point &p) const
   { 
     StackVector<double,1> coords;
     return(find_closest_elem(pdist,result,coords,elem,p,-1.0));
   }  
 
   template <class ARRAY> 
-  bool find_closest_elems(double& pdist, Point& result,
-                          ARRAY &elems, const Point &p) const
+  bool find_closest_elems(double& pdist, Core::Geometry::Point& result,
+                          ARRAY &elems, const Core::Geometry::Point &p) const
   {
     typename Elem::size_type sz; size(sz);
     if (sz == 0) return (false);
@@ -1150,7 +1157,7 @@ public:
 
                 while (it != eit)
                 {
-                  Point point = points_[*it];
+                  Core::Geometry::Point point = points_[*it];
                   const double dist = (p - point).length2();
                   
                   if (dist < dmin - epsilon2_)
@@ -1211,7 +1218,7 @@ public:
   //! This function returns a maker for Pio.
   static Persistent *maker() { return new PointCloudMesh(); }
   //! This function returns a handle for the virtual interface.
-  static MeshHandle mesh_maker() { return new PointCloudMesh(); }
+  static MeshHandle mesh_maker() { return boost::make_shared<PointCloudMesh>(); }
 
 protected:
   template <class ARRAY, class INDEX>
@@ -1232,38 +1239,37 @@ protected:
   }
 
 protected:
-  void compute_grid(BBox& bb);
-  void compute_epsilon(BBox& bb);
+  void compute_grid(Core::Geometry::BBox& bb);
+  void compute_epsilon(Core::Geometry::BBox& bb);
   
   void insert_elem_into_grid(typename Elem::index_type ci);
   void remove_elem_from_grid(typename Elem::index_type ci);
 
 
   //! the nodes
-  std::vector<Point> points_;
+  std::vector<Core::Geometry::Point> points_;
 
   //! basis fns
   Basis         basis_;
 
-  LockingHandle<SearchGridT<index_type> > grid_;
+  boost::shared_ptr<SearchGridT<index_type> > grid_;
 
   //! Record which parts of the mesh are synchronized
   mask_type     synchronized_;
   //! Lock to synchronize between threads
-  Mutex         synchronize_lock_;
+  Core::Thread::Mutex         synchronize_lock_;
   
   double        epsilon_;
   double        epsilon2_;
 
   //! Virtual interface
-  Handle<VMesh> vmesh_;
+  boost::shared_ptr<VMesh> vmesh_;
 
 };  // end class PointCloudMesh
 
 
 template<class Basis>
 PointCloudMesh<Basis>::PointCloudMesh() :
-  grid_(0),
   synchronized_(ALL_ELEMENTS_E),
   synchronize_lock_("PointCloudMesh Lock"),  
   epsilon_(0.0),
@@ -1271,7 +1277,7 @@ PointCloudMesh<Basis>::PointCloudMesh() :
 {
   DEBUG_CONSTRUCTOR("PointCloudMesh") 
   //! Initialize the virtual interface when the mesh is created
-  vmesh_ = CreateVPointCloudMesh(this);
+  vmesh_.reset(CreateVPointCloudMesh(this));
 }
   
 template<class Basis>
@@ -1279,7 +1285,6 @@ PointCloudMesh<Basis>::PointCloudMesh(const PointCloudMesh &copy) :
   Mesh(copy),
   points_(copy.points_),
   basis_(copy.basis_),  
-  grid_(0),
   synchronized_(copy.synchronized_),
   synchronize_lock_("PointCloudMesh Lock")
 {
@@ -1294,9 +1299,9 @@ PointCloudMesh<Basis>::PointCloudMesh(const PointCloudMesh &copy) :
 
   // Copy element grid
   synchronized_ &= ~Mesh::LOCATE_E;
-  if (copy.grid_.get_rep())
+  if (copy.grid_)
   {
-    grid_ = new SearchGridT<index_type>(*(copy.grid_.get_rep()));
+    grid_.reset(new SearchGridT<index_type>(*copy.grid_));
   }
   
   synchronized_ |= copy.synchronized_ & Mesh::LOCATE_E;
@@ -1311,7 +1316,7 @@ PointCloudMesh<Basis>::PointCloudMesh(const PointCloudMesh &copy) :
   //! Create a new virtual interface for this copy
   //! all pointers have changed hence create a new
   //! virtual interface class
-  vmesh_ = CreateVPointCloudMesh(this);
+  vmesh_.reset(CreateVPointCloudMesh(this));
 }
     
 template<class Basis>
@@ -1330,10 +1335,10 @@ PointCloudMesh<Basis>::pointcloud_typeid(type_name(-1), "Mesh",
 
 
 template <class Basis>
-BBox
+Core::Geometry::BBox
 PointCloudMesh<Basis>::get_bounding_box() const
 {
-  BBox result;
+  Core::Geometry::BBox result;
 
   typename Node::iterator i, ie;
   begin(i);
@@ -1357,29 +1362,29 @@ PointCloudMesh<Basis>::get_bounding_box() const
 
 template <class Basis>
 void 
-PointCloudMesh<Basis>::get_canonical_transform(Transform &t) const
+PointCloudMesh<Basis>::get_canonical_transform(Core::Geometry::Transform &t) const
 {
   t.load_identity();
-  BBox bbox = get_bounding_box();
+  Core::Geometry::BBox bbox = get_bounding_box();
   t.pre_scale(bbox.diagonal());
-  t.pre_translate(Vector(bbox.min()));
+  t.pre_translate(Core::Geometry::Vector(bbox.min()));
 }
 
 template <class Basis>
 void
-PointCloudMesh<Basis>::transform(const Transform &t)
+PointCloudMesh<Basis>::transform(const Core::Geometry::Transform &t)
 {
   synchronize_lock_.lock();
 
-  std::vector<Point>::iterator itr = points_.begin();
-  std::vector<Point>::iterator eitr = points_.end();
+  std::vector<Core::Geometry::Point>::iterator itr = points_.begin();
+  std::vector<Core::Geometry::Point>::iterator eitr = points_.end();
   while (itr != eitr)
   {
     *itr = t.project(*itr);
     ++itr;
   }
   
-  if (grid_.get_rep()) { grid_->transform(t); }
+  if (grid_) { grid_->transform(t); }
 
   synchronize_lock_.unlock();  
 }
@@ -1387,7 +1392,7 @@ PointCloudMesh<Basis>::transform(const Transform &t)
 
 template <class Basis>
 int
-PointCloudMesh<Basis>::get_weights(const Point &p,
+PointCloudMesh<Basis>::get_weights(const Core::Geometry::Point &p,
                                    typename Node::array_type &l,
                                    double *w)
 {
@@ -1405,7 +1410,7 @@ PointCloudMesh<Basis>::get_weights(const Point &p,
 
 template <class Basis>
 typename PointCloudMesh<Basis>::Node::index_type
-PointCloudMesh<Basis>::add_point(const Point &p)
+PointCloudMesh<Basis>::add_point(const Core::Geometry::Point &p)
 {
   points_.push_back(p);
   return points_.size() - 1;
@@ -1423,7 +1428,7 @@ PointCloudMesh<Basis>::io(Piostream& stream)
   Mesh::io(stream);
 
   // IO data members, in order
-  Pio(stream,points_);
+  Pio(stream, points_);
 
   if (version >= 2) {
     basis_.io(stream);
@@ -1432,7 +1437,7 @@ PointCloudMesh<Basis>::io(Piostream& stream)
   stream.end_class();
 
   if (stream.reading())
-    vmesh_ = CreateVPointCloudMesh(this);
+    vmesh_.reset(CreateVPointCloudMesh(this));
 }
 
 
@@ -1564,7 +1569,7 @@ PointCloudMesh<Basis>::synchronize(mask_type sync)
         !(synchronized_ & Mesh::EPSILON_E) ))
   {
     //! These computations share the evalution of the bounding box
-    BBox bb = get_bounding_box(); 
+    Core::Geometry::BBox bb = get_bounding_box(); 
 
     //! Compute the epsilon for geometrical closeness comparisons
     //! Mainly used by the grid lookup tables
@@ -1608,7 +1613,7 @@ PointCloudMesh<Basis>::clear_synchronization()
   synchronized_ = Mesh::NODES_E | Mesh::ELEMS_E;
 
   // Free memory where possible
-  grid_ = 0;
+  grid_.reset();
 
   synchronize_lock_.unlock();
   return (true);
@@ -1633,7 +1638,7 @@ PointCloudMesh<Basis>::remove_elem_from_grid(typename Elem::index_type ni)
 
 template <class Basis>
 void
-PointCloudMesh<Basis>::compute_grid(BBox& bb)
+PointCloudMesh<Basis>::compute_grid(Core::Geometry::BBox& bb)
 {
   if (bb.valid())
   {
@@ -1644,14 +1649,14 @@ PointCloudMesh<Basis>::compute_grid(BBox& bb)
     const size_type s = 
       3*static_cast<size_type>((ceil(pow(static_cast<double>(esz) , (1.0/3.0))))/2.0 + 1.0);
 
-    Vector diag  = bb.diagonal();
+    Core::Geometry::Vector diag  = bb.diagonal();
     double trace = (diag.x()+diag.y()+diag.z());
     size_type sx = static_cast<size_type>(ceil(0.5+diag.x()/trace*s));
     size_type sy = static_cast<size_type>(ceil(0.5+diag.y()/trace*s));
     size_type sz = static_cast<size_type>(ceil(0.5+diag.z()/trace*s));
     
-    BBox b = bb; b.extend(10*epsilon_);
-    grid_ = new SearchGridT<index_type>(sx, sy, sz, b.min(), b.max());
+    Core::Geometry::BBox b = bb; b.extend(10*epsilon_);
+    grid_.reset(new SearchGridT<index_type>(sx, sy, sz, b.min(), b.max()));
 
     typename Elem::iterator ci, cie;
     begin(ci); end(cie);
@@ -1663,7 +1668,7 @@ PointCloudMesh<Basis>::compute_grid(BBox& bb)
   }
   else
   {
-    grid_ = new SearchGridT<index_type>(1,1,1,Point(0,0,0.0,0.0),Point(1.0,1.0,1.0));
+    grid_.reset(new SearchGridT<index_type>(1,1,1,Core::Geometry::Point(0,0,0.0,0.0),Core::Geometry::Point(1.0,1.0,1.0)));
   }
 
   synchronized_ |= Mesh::LOCATE_E;
@@ -1672,7 +1677,7 @@ PointCloudMesh<Basis>::compute_grid(BBox& bb)
 
 template<class Basis>
 void
-PointCloudMesh<Basis>::compute_epsilon(BBox& bb)
+PointCloudMesh<Basis>::compute_epsilon(Core::Geometry::BBox& bb)
 {
   bb = get_bounding_box();
   epsilon_ = bb.diagonal().length()*1e-8;
@@ -1703,7 +1708,7 @@ template <class Basis>
 const TypeDescription*
 PointCloudMesh<Basis>::get_type_description() const
 {
-  return get_type_description((PointCloudMesh<Basis> *)0);
+  return SCIRun::get_type_description((PointCloudMesh<Basis> *)0);
 }
 
 
@@ -1715,7 +1720,7 @@ PointCloudMesh<Basis>::node_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((PointCloudMesh<Basis> *)0);
+      SCIRun::get_type_description((PointCloudMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Node",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1733,7 +1738,7 @@ PointCloudMesh<Basis>::edge_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((PointCloudMesh<Basis> *)0);
+      SCIRun::get_type_description((PointCloudMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Edge",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1751,7 +1756,7 @@ PointCloudMesh<Basis>::face_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((PointCloudMesh<Basis> *)0);
+      SCIRun::get_type_description((PointCloudMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Face",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1769,7 +1774,7 @@ PointCloudMesh<Basis>::cell_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((PointCloudMesh<Basis> *)0);
+      SCIRun::get_type_description((PointCloudMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Cell",
                                 std::string(__FILE__),
                                 "SCIRun",

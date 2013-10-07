@@ -37,7 +37,16 @@ using namespace SCIRun::Core::Algorithms;
 
 AlgorithmParameterName CreateStringModule::InputString("InputString");
 
-CreateStringModule::CreateStringModule() : Module(ModuleLookupInfo("CreateString", "String", "SCIRun")) {}
+CreateStringModule::CreateStringModule() : Module(ModuleLookupInfo("CreateString", "String", "SCIRun")) 
+{
+  INITIALIZE_PORT(NewString);
+}
+
+void CreateStringModule::setStateDefaults()
+{
+  auto state = get_state();
+  state->setValue(InputString, std::string());
+}
 
 void CreateStringModule::execute()
 {

@@ -51,7 +51,8 @@ class InputPortWidget;
 class OutputPortWidget;
 class PositionProvider;
 
-class ModuleWidget : public QFrame, public NeedsScenePositionProvider, public SCIRun::Dataflow::Networks::ExecutableObject, public Ui::Module
+class ModuleWidget : public QFrame, //public NeedsScenePositionProvider, 
+  public SCIRun::Dataflow::Networks::ExecutableObject, public Ui::Module
 {
 	Q_OBJECT
 	
@@ -60,8 +61,8 @@ public:
   ~ModuleWidget();
 
   void trackConnections();
-  QPointF inputPortPosition() const;
-  QPointF outputPortPosition() const;
+  //QPointF inputPortPosition() const;
+  //QPointF outputPortPosition() const;
 
   size_t numInputPorts() const;
   size_t numOutputPorts() const;
@@ -79,6 +80,14 @@ public:
   static boost::shared_ptr<class ConnectionFactory> connectionFactory_;
   static boost::shared_ptr<class ClosestPortFinder> closestPortFinder_;
   
+  void setColorAsWaiting();
+  void setColorSelected();
+  void setColorUnselected();
+
+  void printPortPositions() const;
+
+  static const int PORT_SPACING = 3;
+
 public Q_SLOTS:
   virtual void execute();
   void showOptionsDialog();
@@ -90,7 +99,7 @@ public Q_SLOTS:
   void launchDocumentation();
   void updateNote(const Note& note);
   void duplicate();
-  void updateStyleSheet(const QString& sheet);
+  void connectNewModule(const SCIRun::Dataflow::Networks::PortDescriptionInterface* portToConnect, const std::string& newModuleName);
 Q_SIGNALS:
   void removeModule(const SCIRun::Dataflow::Networks::ModuleId& moduleId);
   void requestConnection(const SCIRun::Dataflow::Networks::PortDescriptionInterface* from, const SCIRun::Dataflow::Networks::PortDescriptionInterface* to);
@@ -101,12 +110,15 @@ Q_SIGNALS:
   void cancelConnectionsInProgress();
   void noteUpdated(const Note& note);
   void duplicateModule(const SCIRun::Dataflow::Networks::ModuleHandle& module);
-  void styleSheetUpdated(const QString& sheet);
+  void connectNewModule(const SCIRun::Dataflow::Networks::ModuleHandle& moduleToConnectTo, const SCIRun::Dataflow::Networks::PortDescriptionInterface* portToConnect, const std::string& newModuleName);
+  void backgroundColorUpdated(const QString& color);
+private Q_SLOTS:
+  void updateBackgroundColor(const QString& color);
 private:
   Ports inputPorts_;
   Ports outputPorts_;
   boost::timer timer_;
-  bool deletedFromGui_;
+  bool deletedFromGui_, colorLocked_;
 
   SCIRun::Dataflow::Networks::ModuleHandle theModule_;
 

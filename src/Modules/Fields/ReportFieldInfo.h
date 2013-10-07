@@ -30,7 +30,7 @@
 #define MODULES_FIELDS_REPORTFIELDINFO_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Fields/Share.h>
+#include <Modules/Fields/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -43,6 +43,7 @@ namespace Fields {
   public:
     ReportFieldInfoModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
     INPUT_PORT(0, Input, LegacyField);
     OUTPUT_PORT(0, FieldType, String);
     OUTPUT_PORT(1, NumNodes, Int32);

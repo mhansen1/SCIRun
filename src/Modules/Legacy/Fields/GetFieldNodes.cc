@@ -26,63 +26,34 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-//! Include the algorithm
-#include <Core/Algorithms/Fields/MeshData/GetMeshNodes.h>
+#include <Modules/Legacy/Fields/GetFieldNodes.h>
+#include <Core/Datatypes/Matrix.h>
+#include <Core/Datatypes/Legacy/Field/Field.h>
 
-//! The module class
-#include <Dataflow/Network/Module.h>
+using namespace SCIRun::Modules::Fields;
+using namespace SCIRun::Dataflow::Networks;
+using namespace SCIRun::Core::Datatypes;
 
-//! We need to define the ports used
-#include <Dataflow/Network/Ports/FieldPort.h>
-#include <Dataflow/Network/Ports/MatrixPort.h>
-#include <Dataflow/Network/Ports/NrrdPort.h>
+//    SCIRunAlgo::GetMeshNodesAlgo algo_;
 
-namespace SCIRun {
-
-class GetFieldNodes : public Module {
-  public:
-    //! constructor and execute function
-    GetFieldNodes(GuiContext*);
-    virtual ~GetFieldNodes() {}
-    virtual void execute();
-  
-  private:
-    //! Define algorithms needed
-    SCIRunAlgo::GetMeshNodesAlgo algo_;
-  
-};
-
-
-DECLARE_MAKER(GetFieldNodes)
-GetFieldNodes::GetFieldNodes(GuiContext* ctx)
-  : Module("GetFieldNodes", ctx, Source, "ChangeMesh", "SCIRun")
+GetFieldNodes::GetFieldNodes()
+  : Module(ModuleLookupInfo("GetFieldNodes", "ChangeMesh", "SCIRun"), false)
 {
-  //! Forward error messages;
-  algo_.set_progress_reporter(this);
+  INITIALIZE_PORT(InputField);
+  INITIALIZE_PORT(MatrixNodes);
 }
 
 void GetFieldNodes::execute()
 {
-  //! Define dataflow handles:
-  FieldHandle input;
-  MatrixHandle matrixdata(0);
+  FieldHandle input = getRequiredInput(InputField);
   
-  //! Get data from port:
-  if(!(get_input_handle("Field",input,true))) return;
-
-  //! Only do work if needed:
-  if (inputs_changed_ || !oport_cached("Matrix Nodes"))
+  //inputs_changed_ || !oport_cached("Matrix Nodes")
+  if (needToExecute())
   {    
     update_state(Executing);
 
-    //! Run algorithm
-    if(!(algo_.run(input,matrixdata))) return;
+    auto output = algo_->run_generic(make_input((InputField, input)));
 
-    //! If port is not connected at time of execute, send down a null handle
-    //! send data downstream:
-    send_output_handle("Matrix Nodes", matrixdata);
+    sendOutputFromAlgorithm(MatrixNodes, output);
   }
 }
-
-} // End namespace SCIRun
-

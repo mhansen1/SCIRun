@@ -30,18 +30,20 @@
 #define MODULES_BASIC_PRINT_DATATYPE_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Basic/Share.h>
+#include <Modules/Basic/share.h>
 
 namespace SCIRun {
   namespace Modules {
     namespace Basic {
 
       class SCISHARE PrintDatatypeModule : public SCIRun::Dataflow::Networks::Module,
-        public Has1InputPort<DatatypePortTag>
+        public Has1InputPort<DatatypePortTag>,
+        public HasNoOutputPorts
       {
       public:
         PrintDatatypeModule();
         virtual void execute();
+        virtual void setStateDefaults() {}
 
         INPUT_PORT(0, Input, Datatype);
 

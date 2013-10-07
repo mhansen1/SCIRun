@@ -31,7 +31,7 @@
 
 #include <Dataflow/Network/Module.h>
 #include <Core/Algorithms/Math/AlgorithmFwd.h>
-#include <Modules/Math/Share.h>
+#include <Modules/Math/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -44,6 +44,7 @@ namespace Math {
   public:
     EvaluateLinearAlgebraUnaryModule();
     virtual void execute();
+    virtual void setStateDefaults();
     INPUT_PORT(0, Input, DenseMatrix);
     OUTPUT_PORT(0, Result, DenseMatrix);
   };

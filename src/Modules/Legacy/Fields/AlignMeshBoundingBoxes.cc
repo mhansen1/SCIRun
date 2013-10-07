@@ -26,61 +26,36 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include <Core/Algorithms/Fields/TransformMesh/AlignMeshBoundingBoxes.h>
-
-#include <Dataflow/Network/Ports/MatrixPort.h>
-#include <Dataflow/Network/Ports/FieldPort.h>
-
-#include <Dataflow/Network/Module.h>
-
-namespace SCIRun {
+#include <Modules/Legacy/Fields/AlignMeshBoundingBoxes.h>
+#include <Core/Datatypes/Legacy/Field/Field.h>
+#include <Core/Datatypes/Matrix.h>
 
 using namespace SCIRun;
+using namespace SCIRun::Modules::Fields;
+using namespace SCIRun::Dataflow::Networks;
 
-class AlignMeshBoundingBoxes : public Module {
-  public:
-    AlignMeshBoundingBoxes(GuiContext*);
-    virtual ~AlignMeshBoundingBoxes() {}
-    virtual void execute();
-
-  private:
-    SCIRunAlgo::AlignMeshBoundingBoxesAlgo algo_;
-};
-
-
-DECLARE_MAKER(AlignMeshBoundingBoxes)
-
-AlignMeshBoundingBoxes::AlignMeshBoundingBoxes(GuiContext* ctx) :
-  Module("AlignMeshBoundingBoxes", ctx, Source, "ChangeMesh", "SCIRun")
+AlignMeshBoundingBoxes::AlignMeshBoundingBoxes() :
+  Module(ModuleLookupInfo("AlignMeshBoundingBoxes", "ChangeMesh", "SCIRun"), false)
 {
-  algo_.set_progress_reporter(this);
+  INITIALIZE_PORT(InputField);
+  INITIALIZE_PORT(AlignmentField);
+  INITIALIZE_PORT(OutputField);
+  INITIALIZE_PORT(TransformMatrix);
 }
 
-
-void
-AlignMeshBoundingBoxes::execute()
+void AlignMeshBoundingBoxes::execute()
 {
-  // Get input field.
-  FieldHandle ifield, ofield,objfield;
-  MatrixHandle omatrix;
+  FieldHandle ifield = getRequiredInput(InputField);
+  FieldHandle objfield = getRequiredInput(AlignmentField);
 
-  get_input_handle("Input", ifield,true);
-  get_input_handle("AlignmentField", objfield,true);
-
-  if (inputs_changed_ || !oport_cached("Output") || !oport_cached("Transform"))
+  // inputs_changed_ || !oport_cached("Output") || !oport_cached("Transform")
+  if (needToExecute())
   {
-    // Inform module that execution started
     update_state(Executing);
 
-    // Core algorithm of the module
-    if(!(algo_.run(ifield,objfield,ofield,omatrix))) return;    
+    auto output = algo_->run_generic(make_input((InputField, ifield)(AlignmentField, objfield)));
 
-    // Send output to output ports
-    send_output_handle("Output", ofield);
-    send_output_handle("Transform", omatrix);
+    sendOutputFromAlgorithm(OutputField, output);
+    sendOutputFromAlgorithm(TransformMatrix, output);
   }
 }
-
-} // End namespace SCIRun
-
-

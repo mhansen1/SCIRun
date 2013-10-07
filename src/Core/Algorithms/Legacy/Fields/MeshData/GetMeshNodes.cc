@@ -26,77 +26,99 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include <Core/Algorithms/Fields/MeshData/GetMeshNodes.h>
+#include <Core/Algorithms/Legacy/Fields/MeshData/GetMeshNodes.h>
+#include <Core/Algorithms/Base/AlgorithmPreconditions.h>
 
+#include <Core/Datatypes/Legacy/Field/FieldInformation.h>
+#include <Core/Datatypes/Legacy/Field/VMesh.h>
 #include <Core/Datatypes/DenseMatrix.h>
-#include <Core/Datatypes/FieldInformation.h>
-
-namespace SCIRunAlgo {
 
 using namespace SCIRun;
+using namespace SCIRun::Core::Algorithms::Fields;
+using namespace SCIRun::Core::Geometry;
+using namespace SCIRun::Core::Datatypes;
+using namespace SCIRun::Core::Utility;
+using namespace SCIRun::Core::Algorithms;
 
-bool 
-GetMeshNodesAlgo::
-run(FieldHandle& input, MatrixHandle& output)
+bool GetMeshNodesAlgo::run(FieldHandle& input, DenseMatrixHandle& output) const
 {
-  algo_start("GetMeshNodes");
+  ScopedAlgorithmStatusReporter asr(this, "GetMeshNodes");
 
-  if (input.get_rep() == 0)
+  if (!input)
   {
     error("No input source field");
-    algo_end(); return (false);
+    return (false);
   }
   
   VMesh* vmesh = input->vmesh();
   VMesh::size_type size = vmesh->num_nodes();
   
-  output = new DenseMatrix(size,3);
+  output.reset(new DenseMatrix(size,3));
 
-  if (output.get_rep() == 0)
+  if (!output)
   {
     error("Could not allocate output matrix");
-    algo_end(); return (false);
+    return (false);
   }
 
   FieldInformation fi(input);
 
+  //TODO: refactor duplication
   if (fi.is_regularmesh())
   {
-    double* dataptr = output->get_data_pointer();
     Point p;
-    index_type k = 0;
     int cnt = 0;
     for (VMesh::Node::index_type i=0; i<size; ++i)
     {
       vmesh->get_center(p,i);
-      dataptr[k] = p.x();
-      dataptr[k+1] = p.y();
-      dataptr[k+2] = p.z();
-      k += 3;
-      cnt++; if (cnt == 400) {cnt=0; update_progress(i,size); }
+      (*output)(i, 0) = p.x();
+      (*output)(i, 1) = p.y();
+      (*output)(i, 2) = p.z();
+      cnt++; 
+      if (cnt == 400) 
+      {
+        cnt = 0; 
+        update_progress_max(i,size); 
+      }
     }
 
   }
   else
   {
-    double* dataptr = output->get_data_pointer();
     Point*  points  = vmesh->get_points_pointer();
 
     Point p;
-    index_type k = 0;
     int cnt = 0;
     for (VMesh::Node::index_type i=0; i<size; ++i)
     {
       p = points[i];
-      dataptr[k] = p.x();
-      dataptr[k+1] = p.y();
-      dataptr[k+2] = p.z();
-      k += 3;
-      cnt++; if (cnt == 400) {cnt=0; update_progress(i,size); }
+      (*output)(i, 0) = p.x();
+      (*output)(i, 1) = p.y();
+      (*output)(i, 2) = p.z();
+      cnt++; 
+      if (cnt == 400) 
+      {
+        cnt = 0; 
+        update_progress_max(i,size); 
+      }
     }
   }
   
-  algo_end(); return (true);
+  return (true);
 }
 
-} // namespace SCIRunAlgo
+AlgorithmInputName GetMeshNodesAlgo::InputField("InputField");
+AlgorithmOutputName GetMeshNodesAlgo::MatrixNodes("MatrixNodes");
+
+AlgorithmOutput GetMeshNodesAlgo::run_generic(const AlgorithmInput& input) const
+{
+  auto inputField = input.get<Field>(InputField);
+
+  DenseMatrixHandle nodes;
+  if (!run(inputField, nodes))
+    THROW_ALGORITHM_PROCESSING_ERROR("False returned on legacy run call.");
+
+  AlgorithmOutput output;
+  output[MatrixNodes] = nodes;
+  return output;
+}

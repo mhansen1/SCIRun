@@ -26,7 +26,7 @@
 #  DEALINGS IN THE SOFTWARE.
 #
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11 FATAL_ERROR)
 
 PROJECT(SCIRun5Prototype)
 
@@ -102,6 +102,9 @@ INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckCXXCompilerFlag)
 INCLUDE(ExternalProject)
 
+IF(WIN32)
+  ADD_DEFINITIONS("/wd4251 /wd4275 -D_CRT_SECURE_NO_WARNINGS") 
+ENDIF(WIN32)
 
 ########################################################################
 # Configure test support
@@ -245,7 +248,7 @@ IF(UNIX)
 ENDIF()
 
 IF(APPLE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -ftemplate-depth=256")
   SET(CMAKE_CXX_FLAGS_DEBUG "-Wshorten-64-to-32 ${CMAKE_CXX_FLAGS_DEBUG}")
 
   ADD_DEFINITIONS(-DGTEST_USE_OWN_TR1_TUPLE=1)
@@ -330,6 +333,7 @@ SET(boost_LIBRARY_PATH "${boost_BINARY_DIR}/${boost_LIB_PREFIX}${SCI_BOOST_LIBRA
 SET(boost_LIBRARY_PATH_RELEASE "${boost_BINARY_DIR}/Release/${boost_LIB_PREFIX}${SCI_BOOST_LIBRARY}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 SET(boost_LIBRARY_PATH_DEBUG "${boost_BINARY_DIR}/Debug/${boost_LIB_PREFIX}${SCI_BOOST_LIBRARY}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
+# Fixes Mac build for now, without extra boost/python cmake magic.
 SET(boost_GIT_TAG "origin/master")
 
 # TODO: fix install step
@@ -384,91 +388,51 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(${SCI_BOOST_INCLUDE})
 
+
 ########################################################################
 # Configure Spire external project
 
-SET(SPIRE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Externals/spire")
-SET(SPIRE_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/Externals/spire")
+# Ensure CMAKE_MODULE_PATH includes path to Spire's SpirePM.cmake.
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+include(SpirePM)
 
-SET(SCI_SPIRE_INCLUDE ${SPIRE_SOURCE_DIR} CACHE INTERNAL "Spire include directories." FORCE)
-SET(SCI_SPIRE_LIBRARY Spire CACHE INTERNAL "Spire library name." FORCE)
-
-Set(SPIRE_LIBRARY_DIR "${SPIRE_BINARY_DIR}/Spire")
-Set(SPIRE_LIBRARY_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
-
-SET(SPIRE_LIBRARY_PATH "${SPIRE_LIBRARY_DIR}/${SPIRE_LIBRARY_PREFIX}${SCI_SPIRE_LIBRARY}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-# other configuration options are RELWITHDEBINFO and MINSIZEREL
-# TODO: simplify
-SET(SPIRE_LIBRARY_PATH_RELEASE_PREFIX "${SPIRE_LIBRARY_DIR}/Release/${SPIRE_LIBRARY_PREFIX}${SCI_SPIRE_LIBRARY}")
-SET(SPIRE_LIBRARY_PATH_DEBUG_PREFIX "${SPIRE_LIBRARY_DIR}/Debug/${SPIRE_LIBRARY_PREFIX}${SCI_SPIRE_LIBRARY}")
-SET(SPIRE_LIBRARY_PATH_RELEASE "${SPIRE_LIBRARY_PATH_RELEASE_PREFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-SET(SPIRE_LIBRARY_PATH_DEBUG "${SPIRE_LIBRARY_PATH_DEBUG_PREFIX}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
-# Better way to do this?
+set(SPIRE_OPTIONS)
 IF(WIN32)
-  set(SPIRE_CMAKE_ARGS -DSPIRE_USE_STD_THREADS:bool=OFF)
+  set(SPIRE_OPTIONS ${SPIRE_OPTIONS} "USE_STD_THREADS;OFF")
 ELSE()
-  set(SPIRE_CMAKE_ARGS -DSPIRE_USE_STD_THREADS:bool=ON)
-  ADD_DEFINITIONS(-DSPIRE_USE_STD_THREADS)
+  set(SPIRE_OPTIONS ${SPIRE_OPTIONS} "USE_STD_THREADS;ON")
+  add_definitions("-DSPIRE_USE_STD_THREADS")
 ENDIF()
 
-ExternalProject_Add(Spire_external
-  PREFIX ${spire_BINARY_DIR}
-  GIT_REPOSITORY "https://github.com/SCIInstitute/spire.git"
-  GIT_TAG "origin/master"
-  SOURCE_DIR ${SPIRE_SOURCE_DIR}
-  BINARY_DIR ${SPIRE_BINARY_DIR}
-  DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/download/spire"
-  PATCH_COMMAND ""
-  INSTALL_DIR ""
-  INSTALL_COMMAND ""
-  CMAKE_ARGS 
-    -DUSE_SCIRUN_INTERFACE:BOOL=ON
-    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-    -DBUILD_SHARED_LIBS:BOOL=ON
-    $SPIRE_CMAKE_ARGS
-)
+set(SPIRE_OPTIONS ${SPIRE_OPTIONS} "SHADER_OUTPUT_DIR;${CMAKE_CURRENT_BINARY_DIR}/Shaders")
+set(SPIRE_OPTIONS ${SPIRE_OPTIONS} "ASSET_OUTPUT_DIR;${CMAKE_CURRENT_BINARY_DIR}/Assets")
 
-# Custom build step to install shaders afetr the build has completed.
-ExternalProject_Add_Step(Spire_external e1
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SPIRE_SOURCE_DIR}/Spire/Shaders ${CMAKE_CURRENT_BINARY_DIR}/Shaders
-  COMMENT "Copies spire shaders to binary directory."
-  DEPENDEES download
-  DEPENDERS build
-  ALWAYS 1
-)
+# Add core spire library. Either download it or use a local version.
+set(SPIRE_CORE "Spire_Core_EP")
+Spire_AddCore(${SPIRE_CORE}
+  ${SPIRE_OPTIONS}
+  GIT_TAG "v0.5.0")
+Spire_AddModule(${SPIRE_CORE} SCIRun "https://github.com/iauns/spire-scirun" "origin/master")
 
-ADD_LIBRARY(${SCI_SPIRE_LIBRARY} SHARED IMPORTED GLOBAL)
-ADD_DEPENDENCIES(${SCI_SPIRE_LIBRARY} Spire_external)
+# Include / library directories placed in-scope by Spire_AddCore and Spire_AddModule.
+link_directories(${SPIRE_LIBRARY_DIRS})
+include_directories(${SPIRE_INCLUDE_DIR})
+include_directories(${SPIRE_MODULE_INCLUDE_DIRS})
+include_directories(SYSTEM ${SPIRE_3RDPARTY_INCLUDE_DIRS})
 
-IF (CMAKE_GENERATOR MATCHES "Makefiles")
-  SET_TARGET_PROPERTIES(${SCI_SPIRE_LIBRARY}
-    PROPERTIES
-      IMPORTED_LOCATION ${SPIRE_LIBRARY_PATH}
-  )
-ELSE() # Xcode, VS, others...
-  SET_TARGET_PROPERTIES(${SCI_SPIRE_LIBRARY}
-    PROPERTIES
-      IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"
-      IMPORTED_LOCATION_RELEASE ${SPIRE_LIBRARY_PATH_RELEASE}
-      IMPORTED_LOCATION_DEBUG ${SPIRE_LIBRARY_PATH_DEBUG}
-  )
-  IF(WIN32)
-    SET(SPIRE_LIBRARY_PATH_LIB_RELEASE "${SPIRE_LIBRARY_PATH_RELEASE_PREFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}")
-    SET(SPIRE_LIBRARY_PATH_LIB_DEBUG "${SPIRE_LIBRARY_PATH_DEBUG_PREFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}")
-    SET_TARGET_PROPERTIES(${SCI_SPIRE_LIBRARY}
-      PROPERTIES
-        IMPORTED_IMPLIB_RELEASE ${SPIRE_LIBRARY_PATH_LIB_RELEASE}
-        IMPORTED_IMPLIB_DEBUG ${SPIRE_LIBRARY_PATH_LIB_DEBUG}
-  )
+# Spire related includes (required for linking on windows)
+IF(UNIX)
+  IF(APPLE)
+    FIND_LIBRARY(CORE_FOUNDATION_FRAMEWORK CoreFoundation)
+    SET(SCI_SPIRE_EXTRA_LIBRARIES ${CORE_FOUNDATION_FRAMEWORK})
   ENDIF()
 ENDIF()
 
-INCLUDE_DIRECTORIES(${SCI_SPIRE_INCLUDE})
 
-# OpenGL
+########################################################################
+# Find and configure OpenGL
+
 FIND_PACKAGE(OpenGL REQUIRED)
-
 
 ########################################################################
 # Find and configure Qt
@@ -479,7 +443,6 @@ FIND_PACKAGE(Qt4 REQUIRED)
 SET(QT_USE_QTOPENGL TRUE)
 
 IF(QT_FOUND)
-  # TODO: configure Qt OpenGL?
   # TODO: may want to grab Seg3D's custom FindQt4 module and UseQt4 file if
   # build issues haven't been corrected in CMake 2.8.7 and newer
 
@@ -531,11 +494,11 @@ ENDMACRO(SCIRUN_ADD_UNIT_TEST)
 
 SET(BUILD_FROM_TOP_LEVEL 1)
 
+ADD_SUBDIRECTORY(Externals)
 ADD_SUBDIRECTORY(Interface)
 ADD_SUBDIRECTORY(Core)
 ADD_SUBDIRECTORY(Dataflow)
 ADD_SUBDIRECTORY(Modules)
-ADD_SUBDIRECTORY(Externals)
 
 ADD_SUBDIRECTORY(Main)
 
@@ -626,6 +589,7 @@ SET_PROPERTY(TARGET Algorithms_Math         PROPERTY FOLDER "Core/Algorithms")
 SET_PROPERTY(TARGET Algorithms_Math_Tests   PROPERTY FOLDER "Core/Algorithms/Tests")
 SET_PROPERTY(TARGET Algorithms_Field         PROPERTY FOLDER "Core/Algorithms")
 SET_PROPERTY(TARGET Algorithms_Field_Tests   PROPERTY FOLDER "Core/Algorithms/Tests")
+SET_PROPERTY(TARGET Algorithms_Factory   PROPERTY FOLDER "Core/Algorithms")
 SET_PROPERTY(TARGET Core_Algorithms_Legacy_Fields         PROPERTY FOLDER "Core/Algorithms")
 
 SET_PROPERTY(TARGET Dataflow_Network         PROPERTY FOLDER "Dataflow")
@@ -677,12 +641,14 @@ SET_PROPERTY(TARGET gmock_main   PROPERTY FOLDER "Testing Support")
 SET_PROPERTY(TARGET gtest         PROPERTY FOLDER "Testing Support")
 SET_PROPERTY(TARGET gtest_main   PROPERTY FOLDER "Testing Support")
 SET_PROPERTY(TARGET Testing_Utils PROPERTY FOLDER "Testing Support")
+SET_PROPERTY(TARGET Testing_ModuleTestBase PROPERTY FOLDER "Testing Support")
 
 SET_PROPERTY(TARGET Interface_Modules_Base   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_DataIO   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_Math   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_Visualization   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_Render   PROPERTY FOLDER "Interface/Modules")
+SET_PROPERTY(TARGET Interface_Modules_FiniteElements   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_Testing   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_String   PROPERTY FOLDER "Interface/Modules")
 SET_PROPERTY(TARGET Interface_Modules_Fields   PROPERTY FOLDER "Interface/Modules")
@@ -701,23 +667,24 @@ SET_PROPERTY(TARGET Modules_Render   PROPERTY FOLDER "Modules/Render")
 SET_PROPERTY(TARGET Modules_Render_Tests   PROPERTY FOLDER "Modules/Render")
 SET_PROPERTY(TARGET Modules_String   PROPERTY FOLDER "Modules/String")
 SET_PROPERTY(TARGET Modules_String_Tests   PROPERTY FOLDER "Modules/String")
+SET_PROPERTY(TARGET Modules_FiniteElements   PROPERTY FOLDER "Modules/FiniteElements")
+SET_PROPERTY(TARGET Modules_FiniteElements_Tests   PROPERTY FOLDER "Modules/FiniteElements")
 SET_PROPERTY(TARGET Modules_Visualization   PROPERTY FOLDER "Modules/Visualization")
 SET_PROPERTY(TARGET Modules_Visualization_Tests   PROPERTY FOLDER "Modules/Visualization")
 SET_PROPERTY(TARGET Dataflow_Modules_Legacy_Fields PROPERTY FOLDER "Modules/Fields")
 SET_PROPERTY(TARGET Modules_Factory   PROPERTY FOLDER "Modules")
 
 SET_PROPERTY(TARGET Boost_external   PROPERTY FOLDER "Externals")
-SET_PROPERTY(TARGET Spire_external   PROPERTY FOLDER "Externals")
-SET_PROPERTY(TARGET ${SCI_LOG4CPP_LIBRARY} PROPERTY FOLDER "Externals")
+SET_PROPERTY(TARGET ${SPIRE_CORE}   PROPERTY FOLDER "Externals")
+SET_PROPERTY(TARGET spire_spm_SCIRun   PROPERTY FOLDER "Externals")
+SET_PROPERTY(TARGET log4cpp PROPERTY FOLDER "Externals")
 
 
 IF(BUILD_WITH_PYTHON)
-  SET_PROPERTY(TARGET diagram PROPERTY FOLDER "Testing Support")
   SET_PROPERTY(TARGET Core_Python         PROPERTY FOLDER "Core")
   SET_PROPERTY(TARGET Core_Python_Tests         PROPERTY FOLDER "Core/Tests")
   SET_PROPERTY(TARGET SCIRunPythonAPI PROPERTY FOLDER "Dataflow/Engine")
   SET_PROPERTY(TARGET Engine_Python_Tests   PROPERTY FOLDER "Dataflow/Engine/Tests")
-  SET_PROPERTY(TARGET PythonAPI PROPERTY FOLDER "Testing Support")
 ENDIF()
 
 ########################################################################

@@ -29,33 +29,28 @@
 #ifndef CORE_ALGORITHMS_FIELDS_MESHDATA_SETFIELDNODES_H
 #define CORE_ALGORITHMS_FIELDS_MESHDATA_SETFIELDNODES_H 1
 
+#include <Core/Algorithms/Base/AlgorithmBase.h>
+#include <Core/Algorithms/Legacy/Fields/share.h>
 
-//! Datatypes that the algorithm uses
-#include <Core/Datatypes/Mesh.h>
-#include <Core/Datatypes/Field.h>
-#include <Core/Datatypes/Matrix.h>
+namespace SCIRun {
+  namespace Core {
+    namespace Algorithms {
+      namespace Fields {
 
-//! Base class for algorithm
-#include <Core/Algorithms/Util/AlgoBase.h>
-
-//! for Windows support
-#include <Core/Algorithms/Fields/share.h>
-
-namespace SCIRunAlgo {
-
-using namespace SCIRun;
-
-class SCISHARE SetMeshNodesAlgo : public AlgoBase 
+class SCISHARE SetMeshNodesAlgo : public AlgorithmBase 
 {
-
   public:
     SetMeshNodesAlgo()
     {}
     
-    //! Convert data into a matrix
-    bool run(FieldHandle& input, MatrixHandle& matrix, FieldHandle& output);
+    bool run(FieldHandle input, Datatypes::DenseMatrixHandle matrix, FieldHandle& output) const;
+
+    static AlgorithmInputName InputField;
+    static AlgorithmInputName MatrixNodes;
+    static AlgorithmOutputName OutputField;
+    virtual AlgorithmOutput run_generic(const AlgorithmInput& input) const; 
 };
 
-} // end namespace SCIRunAlgo
+}}}}
 
 #endif

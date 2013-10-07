@@ -33,7 +33,7 @@
 #include <string>
 #include <Dataflow/Network/NetworkFwd.h>
 #include <Core/Datatypes/Datatype.h>
-#include <Dataflow/Network/Share.h>
+#include <Dataflow/Network/share.h>
 
 namespace SCIRun {
 namespace Dataflow {
@@ -44,7 +44,7 @@ namespace Networks {
   public:
     virtual ~PortDescriptionInterface();
     virtual size_t nconnections() const = 0;
-    virtual std::string get_colorname() const = 0;
+    virtual std::string get_typename() const = 0;
     virtual std::string get_portname() const = 0;
     virtual bool isInput() const = 0;
     virtual ModuleId getUnderlyingModuleId() const = 0;

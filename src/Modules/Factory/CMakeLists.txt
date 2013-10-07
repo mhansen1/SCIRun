@@ -32,7 +32,7 @@ SET(Modules_Factory_SRCS
 
 SET(Modules_Factory_HEADERS
   HardCodedModuleFactory.h
-  Share.h
+  share.h
 )
 
 ADD_LIBRARY(Modules_Factory 
@@ -44,6 +44,7 @@ TARGET_LINK_LIBRARIES(Modules_Factory
   Dataflow_Network
   Modules_Math
   Modules_Fields
+  Modules_FiniteElements
   Modules_Basic
   Modules_DataIO
   Modules_String

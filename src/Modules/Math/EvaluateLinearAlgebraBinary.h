@@ -30,7 +30,7 @@
 #define MODULES_MATH_EVALUATELINEARALGEBRABINARYMODULE_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Math/Share.h>
+#include <Modules/Math/share.h>
 
 namespace SCIRun {
   namespace Modules {
@@ -43,6 +43,7 @@ namespace SCIRun {
       public:
         EvaluateLinearAlgebraBinaryModule();
         virtual void execute();
+        virtual void setStateDefaults();
 
         INPUT_PORT(0, InputLHS, DenseMatrix);
         INPUT_PORT(1, InputRHS, DenseMatrix);

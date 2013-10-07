@@ -31,7 +31,7 @@
 
 #include <Core/Algorithms/Base/AlgorithmBase.h>
 #include <Core/Algorithms/Math/AlgorithmFwd.h>
-#include <Core/Algorithms/Math/Share.h>
+#include <Core/Algorithms/Math/share.h>
 
 namespace SCIRun {
 namespace Core {
@@ -46,6 +46,8 @@ namespace Math {
     typedef boost::tuple<std::string, size_t, size_t, size_t, double, double> Outputs;
 
     Outputs run(const Inputs& input, const Parameters& params = 0) const;
+
+    AlgorithmOutput run_generic(const AlgorithmInput& input) const;
   };
 
 }}}}

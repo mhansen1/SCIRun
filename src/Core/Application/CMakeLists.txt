@@ -28,11 +28,13 @@
 
 SET(Core_Application_SRCS
   Application.cc
+  Preferences.cc
 )
 
 SET(Core_Application_HEADERS
   Application.h
-  Share.h
+  Preferences.h
+  share.h
 )
 
 ADD_LIBRARY(Core_Application 
@@ -44,6 +46,7 @@ TARGET_LINK_LIBRARIES(Core_Application
   Core_CommandLine
   Engine_Network
   Modules_Factory
+  Algorithms_Factory
   Dataflow_State
   ${SCI_BOOST_LIBRARY}
 )

@@ -32,6 +32,7 @@ SET(Core_Datatypes_SRCS
   Geometry.cc
   Matrix.cc
   MatrixTypeConversions.cc
+  PropertyManagerExtensions.cc
   Scalar.cc
   String.cc
 )
@@ -48,20 +49,12 @@ SET(Core_Datatypes_HEADERS
   MatrixFwd.h
   MatrixIO.h
   MatrixTypeConversions.h
+  PropertyManagerExtensions.h
   Scalar.h
-  Share.h
+  share.h
   SparseRowMatrix.h
   String.h
 )
-
-# Spire related includes (required for linking on windows)
-FIND_PACKAGE(OpenGL REQUIRED)
-IF(UNIX)
-  IF(APPLE)
-    FIND_LIBRARY(CORE_FOUNDATION_FRAMEWORK CoreFoundation)
-    SET(SCI_SPIRE_EXTRA_LIBRARIES ${CORE_FOUNDATION_FRAMEWORK})
-  ENDIF()
-ENDIF()
 
 ADD_LIBRARY(Core_Datatypes 
   ${Core_Datatypes_HEADERS}
@@ -71,8 +64,8 @@ ADD_LIBRARY(Core_Datatypes
 TARGET_LINK_LIBRARIES(Core_Datatypes
   Core_Persistent
   Core_Datatypes_Legacy_Base
+  Core_Geometry_Primitives
   ${OPENGL_LIBRARIES}
-  ${SCI_SPIRE_LIBRARY}
   ${SCI_SPIRE_EXTRA_LIBRARIES}
 )
 

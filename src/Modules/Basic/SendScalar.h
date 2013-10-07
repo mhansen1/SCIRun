@@ -30,18 +30,21 @@
 #define MODULES_BASIC_SEND_SCALAR_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Basic/Share.h>
+#include <Modules/Basic/share.h>
 
 namespace SCIRun {
 namespace Modules {
 namespace Basic {
   
   class SCISHARE SendScalarModule : public SCIRun::Dataflow::Networks::Module,
-    public Has1OutputPort<ScalarPortTag>
+    public Has1OutputPort<ScalarPortTag>,
+    public HasNoInputPorts
   {
   public:
     SendScalarModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
+
     OUTPUT_PORT(0, Scalar, Double);
     static Core::Algorithms::AlgorithmParameterName ValueToSend();
   private:

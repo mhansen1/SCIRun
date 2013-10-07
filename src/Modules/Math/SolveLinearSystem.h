@@ -30,7 +30,7 @@
 #define MODULES_MATH_SOLVELINEARSYSTEM_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Math/Share.h>
+#include <Modules/Math/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -43,13 +43,14 @@ namespace Math {
   public:
     SolveLinearSystemModule();
     virtual void execute();
+    virtual void setStateDefaults();
 
-    INPUT_PORT(0, Matrix, Matrix);
+    INPUT_PORT(0, LHS, Matrix);
     INPUT_PORT(1, RHS, Matrix);
     OUTPUT_PORT(0, Solution, Matrix);
+    
   };
 
-  struct SCISHARE LinearAlgebraError : virtual Core::ExceptionBase {};
 }}}
 
 #endif

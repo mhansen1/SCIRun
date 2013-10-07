@@ -43,6 +43,7 @@ ModuleProxyWidget::ModuleProxyWidget(ModuleWidget* module, QGraphicsItem* parent
   : QGraphicsProxyWidget(parent),
   module_(module),
   grabbedByWidget_(false),
+  isSelected_(false),
   pressedSubWidget_(0),
   note_(0),
   notePosition_(Default),
@@ -50,8 +51,6 @@ ModuleProxyWidget::ModuleProxyWidget(ModuleWidget* module, QGraphicsItem* parent
 {
   setWidget(module);
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsGeometryChanges);
-  boost::shared_ptr<PositionProvider> pp(new ProxyWidgetPosition(this));
-  module_->setPositionObject(pp);
   setAcceptDrops(true);
 
   connect(module, SIGNAL(noteUpdated(const Note&)), this, SLOT(updateNote(const Note&)));
@@ -143,16 +142,21 @@ bool ModuleProxyWidget::isSubwidget(QWidget* alienWidget) const
 
 void ModuleProxyWidget::highlightIfSelected()
 {
-  //std::cout << "\t\thighlightIfSelected: " << module_->getModuleId() << std::endl;
-  if (isSelected())
-    module_->setStyleSheet("background-color: lightblue;");
-  else
-    module_->setStyleSheet("background-color: lightgray;");
+  if (!isSelected_ && isSelected())
+  {
+    module_->setColorSelected();
+    isSelected_ = true;
+  }
+  else if (isSelected_ && !isSelected())
+  {
+    module_->setColorUnselected();
+    isSelected_ = false;
+  }
 }
 
 void ModuleProxyWidget::setAsWaiting()
 {
-  module_->setStyleSheet("background-color: #CDBE70;");
+  module_->setColorAsWaiting();
 }
 
 QVariant ModuleProxyWidget::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -167,9 +171,14 @@ QVariant ModuleProxyWidget::itemChange(GraphicsItemChange change, const QVariant
 
 void ModuleProxyWidget::createPortPositionProviders()
 {
+  int firstPortXPos = -1;
   Q_FOREACH(PortWidget* p, boost::join(module_->getInputPorts(), module_->getOutputPorts()))
   {
-    boost::shared_ptr<PositionProvider> pp(new ProxyWidgetPosition(this, p->pos() - module_->pos() + QPointF(5,5)));
+    if (firstPortXPos < 0)
+      firstPortXPos = p->pos().x();
+    QPoint realPosition(firstPortXPos + (static_cast<int>(p->getIndex()) * (PortWidget::WIDTH + ModuleWidget::PORT_SPACING)), p->pos().y());
+    
+    boost::shared_ptr<PositionProvider> pp(new ProxyWidgetPosition(this, realPosition + QPointF(5,5)));
     p->setPositionObject(pp);
   }
 }

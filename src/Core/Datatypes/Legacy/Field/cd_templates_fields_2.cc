@@ -27,16 +27,19 @@
 */
 
 #include <Core/Persistent/PersistentSTL.h>
-#include <Core/Geometry/Tensor.h>
-#include <Core/Geometry/Vector.h>
+#include <Core/GeometryPrimitives/Tensor.h>
+#include <Core/GeometryPrimitives/Vector.h>
 #include <Core/Basis/CrvLinearLgn.h>
 #include <Core/Basis/Constant.h>
 #include <Core/Basis/NoData.h>
-#include <Core/Datatypes/ScanlineMesh.h>
-#include <Core/Datatypes/PointCloudMesh.h>
-#include <Core/Datatypes/GenericField.h>
+#include <Core/Datatypes/Legacy/Field/ScanlineMesh.h>
+#include <Core/Datatypes/Legacy/Field/PointCloudMesh.h>
+#include <Core/Datatypes/Legacy/Field/GenericField.h>
 
 using namespace SCIRun;
+using namespace SCIRun::Core::Basis;
+using namespace SCIRun::Core::Geometry;
+
 //NoData
 typedef NoDataBasis<double>                  NDBasis;
 
@@ -70,10 +73,13 @@ typedef CrvLinearLgn<unsigned long>         FDulongBasis;
 
 typedef ScanlineMesh<CrvLinearLgn<Point> > SLMesh;
 
-template class ScanlineMesh<CrvLinearLgn<Point> >;
-
 PersistentTypeID backwards_compat_SLM("ScanlineMesh", "Mesh",
 				      SLMesh::maker, SLMesh::maker);
+
+namespace SCIRun {
+  
+  template class ScanlineMesh<CrvLinearLgn<Point> >;
+
 //NoData
 template class GenericField<SLMesh, NDBasis, std::vector<double> >;
 
@@ -104,6 +110,7 @@ template class GenericField<SLMesh, FDuintBasis,   std::vector<unsigned int> >;
 template class GenericField<SLMesh, FDushortBasis, std::vector<unsigned short> >;
 template class GenericField<SLMesh, FDucharBasis,  std::vector<unsigned char> >;
 template class GenericField<SLMesh, FDulongBasis,  std::vector<unsigned long> >;
+}
 
 PersistentTypeID 
 backwards_compat_SLFT("ScanlineField<Tensor>", "Field",
@@ -177,8 +184,9 @@ backwards_compat_SLFul("ScanlineField<unsigned_long>", "Field",
 typedef PointCloudMesh<ConstantBasis<Point> > PCMesh;
 PersistentTypeID backwards_compat_PCM("PointCloudMesh", "Mesh",
 				      PCMesh::maker, PCMesh::maker);
-template class PointCloudMesh<ConstantBasis<Point> >;
 
+namespace SCIRun {
+template class PointCloudMesh<ConstantBasis<Point> >;
 
 //NoData
 template class GenericField<PCMesh, NDBasis, std::vector<double> >;  
@@ -196,6 +204,7 @@ template class GenericField<PCMesh, CFDuintBasis,   std::vector<unsigned int> >;
 template class GenericField<PCMesh, CFDushortBasis, std::vector<unsigned short> >;
 template class GenericField<PCMesh, CFDucharBasis,  std::vector<unsigned char> >;
 template class GenericField<PCMesh, CFDulongBasis,  std::vector<unsigned long> >;
+}
 
 PersistentTypeID 
 backwards_compat_PCFT("PointCloudField<Tensor>", "Field",

@@ -31,18 +31,20 @@
 
 #include <Dataflow/Network/Module.h>
 #include <Core/Datatypes/MatrixFwd.h>
-#include <Modules/Basic/Share.h>
+#include <Modules/Basic/share.h>
 
 namespace SCIRun {
 namespace Modules {
 namespace Basic {
   
   class SCISHARE SendTestMatrixModule : public SCIRun::Dataflow::Networks::Module,
-    public Has1OutputPort<MatrixPortTag>
+    public Has1OutputPort<MatrixPortTag>,
+    public HasNoInputPorts
   {
   public:
     SendTestMatrixModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
     void setMatrix(SCIRun::Core::Datatypes::DenseMatrixHandle data) { data_ = data; }
     OUTPUT_PORT(0, TestMatrix, DenseMatrix);
   private:

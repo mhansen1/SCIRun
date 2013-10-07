@@ -30,7 +30,7 @@
 #define MODULES_DATAIO_READ_MATRIX_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/DataIO/Share.h>
+#include <Modules/DataIO/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -43,6 +43,7 @@ namespace DataIO {
   public:
     ReadMatrixModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
     INPUT_PORT(0, Filename, String);
     OUTPUT_PORT(0, Matrix, Matrix);
     OUTPUT_PORT(1, FileLoaded, String);

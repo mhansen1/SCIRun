@@ -30,18 +30,20 @@
 #define MODULES_MATH_CREATEMATRIXMODULE_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Math/Share.h>
+#include <Modules/Math/share.h>
 
 namespace SCIRun {
 namespace Modules {
 namespace Math {
 
   class SCISHARE CreateMatrixModule : public SCIRun::Dataflow::Networks::Module,
-    public Has1OutputPort<MatrixPortTag>
+    public Has1OutputPort<MatrixPortTag>,
+    public HasNoInputPorts
   {
   public:
     CreateMatrixModule();
     virtual void execute();
+    virtual void setStateDefaults();
     OUTPUT_PORT(0, EnteredMatrix, DenseMatrix);
     static Core::Algorithms::AlgorithmParameterName TextEntry;
   };

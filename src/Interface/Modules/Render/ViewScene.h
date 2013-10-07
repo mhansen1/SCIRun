@@ -36,10 +36,12 @@
 #include <boost/shared_ptr.hpp>
 #include <Modules/Basic/SendScalarModuleState.h>
 #include <Interface/Modules/Base/ModuleDialogGeneric.h>
-#include <Interface/Modules/Render/Share.h>
+#include <Interface/Modules/Render/share.h>
 
 #include "Spire/Interface.h"
-#include "Spire/AppSpecific/SCIRun/SRInterface.h"
+#include "SpireExt/SCIRun/SRInterface.h"
+#include "SpireExt/SCIRun/SRCommonAttributes.h"
+#include "SpireExt/SCIRun/SRCommonUniforms.h"
 #include "GLWidget.h"
 
 //TODO: needs to inherit from ModuleWidget somehow

@@ -34,10 +34,10 @@
 #include <list>
 #include <vector>
 #include <Core/Datatypes/Datatype.h>
-#include <Core/Datatypes/Share.h>
+#include <Core/Datatypes/share.h>
 #include <Spire/Interface.h>
 #include <Spire/Core/GPUStateManager.h>
-#include <Spire/AppSpecific/SCIRun/SRInterface.h>
+#include <SpireExt/SCIRun/SRInterface.h>
 
 // The following include contains AbstractUniformStateItem which allows
 // us to store uniforms to be passed, at a later time, to spire.
@@ -93,24 +93,24 @@ namespace Datatypes {
     std::list<SpireIBO> mIBOs;  ///< Array of index buffer objects.
 
     /// Defines a Spire object 'pass'.
-    struct SpirePass
+    struct SpireSubPass
     {
-      SpirePass(const std::string& name, const std::string& vbo, 
-                const std::string& ibo, const std::string& program,
-                Spire::StuInterface::PRIMITIVE_TYPES primType) :
+      SpireSubPass(const std::string& name, const std::string& vbo, 
+                   const std::string& ibo, const std::string& program,
+                   Spire::Interface::PRIMITIVE_TYPES primType) :
           passName(name),
           vboName(vbo),
           iboName(ibo),
           programName(program),
-          hasGPUState(false),
-          type(primType)
+          type(primType),
+          hasGPUState(false)
       {}
 
       std::string   passName;
       std::string   vboName;
       std::string   iboName;
       std::string   programName;
-      Spire::StuInterface::PRIMITIVE_TYPES type;
+      Spire::Interface::PRIMITIVE_TYPES type;
       // Want Boost::optional here...
       bool            hasGPUState;
       Spire::GPUState gpuState;
@@ -135,7 +135,7 @@ namespace Datatypes {
     };
 
     /// List of passes to setup.
-    std::list<SpirePass>  mPasses;
+    std::list<SpireSubPass>  mPasses;
 
     /// \xxx  Possibly implement a list of global uniforms. Only do this if
     ///       there is a clear need for global uniforms.

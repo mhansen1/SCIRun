@@ -30,18 +30,20 @@
 #define MODULES_STRING_CREATE_STRING_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/String/Share.h>
+#include <Modules/String/share.h>
 
 namespace SCIRun {
 namespace Modules {
 namespace StringProcessing {
   
   class SCISHARE CreateStringModule : public SCIRun::Dataflow::Networks::Module,
-    public Has1OutputPort<StringPortTag>
+    public Has1OutputPort<StringPortTag>,
+    public HasNoInputPorts
   {
   public:
     CreateStringModule();
     virtual void execute();
+    virtual void setStateDefaults();
     OUTPUT_PORT(0, NewString, String);
     static Core::Algorithms::AlgorithmParameterName InputString;
   private:

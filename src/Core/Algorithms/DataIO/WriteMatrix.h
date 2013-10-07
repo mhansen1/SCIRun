@@ -32,7 +32,7 @@
 #include <string>
 #include <Core/Algorithms/Base/AlgorithmBase.h>
 #include <Core/Datatypes/MatrixFwd.h>
-#include <Core/Algorithms/DataIO/Share.h>
+#include <Core/Algorithms/DataIO/share.h>
 
 namespace SCIRun {
   namespace Core {
@@ -48,6 +48,8 @@ namespace SCIRun {
         static AlgorithmParameterName Filename;
 
         Outputs run(const Inputs& input, const Parameters& filename) const;
+
+        AlgorithmOutput run_generic(const AlgorithmInput& input) const;
       };
 }}}}
 

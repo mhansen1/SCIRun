@@ -30,18 +30,21 @@
 #define MODULES_BASIC_RECEIVE_SCALAR_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Basic/Share.h>
+#include <Modules/Basic/share.h>
 
 namespace SCIRun {
   namespace Modules {
     namespace Basic {
 
       class SCISHARE ReceiveScalarModule : public SCIRun::Dataflow::Networks::Module,
-        public Has1InputPort<ScalarPortTag>
+        public Has1InputPort<ScalarPortTag>,
+        public HasNoOutputPorts
       {
       public:
         ReceiveScalarModule();
         virtual void execute();
+        virtual void setStateDefaults() {}
+
         double latestReceivedValue() const { return latestValue_; }
 
         INPUT_PORT(0, Input, Double);

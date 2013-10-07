@@ -30,7 +30,7 @@
 #define MODULES_DATAIO_READ_MESH_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/DataIO/Share.h>
+#include <Modules/DataIO/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -45,6 +45,7 @@ namespace DataIO {
     ReadMeshModule();
 
     virtual void execute();
+    virtual void setStateDefaults() {}
 
     INPUT_PORT(0, Filename, String);
     OUTPUT_PORT(0, OutputSampleField, LegacyMesh);

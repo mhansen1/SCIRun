@@ -33,11 +33,12 @@
 
 #include <Core/Datatypes/Datatype.h>
 #include <Core/Datatypes/Legacy/Field/FieldFwd.h>
+#include <Core/Datatypes/PropertyManagerExtensions.h>
 #include <Core/Datatypes/Legacy/Field/share.h>
 
 namespace SCIRun {
  
-class SCISHARE Field: public Core::Datatypes::Datatype
+class SCISHARE Field : public Core::Datatypes::Datatype, public Core::Datatypes::HasPropertyManager
 {
   public:
     Field();
@@ -45,7 +46,9 @@ class SCISHARE Field: public Core::Datatypes::Datatype
     virtual ~Field();
     
     //! Clone field will generate a pointer to a new copy
-    virtual Field *clone() const = 0;
+    virtual Field* clone() const = 0;
+
+    virtual Field* deep_clone() const = 0;
 
     //! Get pointers to associated structures
     //! mesh -> handle to mesh

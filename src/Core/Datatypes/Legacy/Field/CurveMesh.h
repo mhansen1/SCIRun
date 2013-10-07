@@ -34,25 +34,26 @@
 #include <Core/Datatypes/Legacy/Field/MeshSupport.h>
 
 #include <Core/Containers/StackVector.h>
-#include <Core/Containers/LockingHandle.h>
-#include <Core/Containers/Handle.h>
+#include <Core/Persistent/PersistentSTL.h>
 
-#include <Core/GeometryPrimitivesBBox.h>
-#include <Core/GeometryPrimitivesPoint.h>
-#include <Core/GeometryPrimitivesTransform.h>
-#include <Core/GeometryPrimitivesVector.h>
+#include <Core/GeometryPrimitives/BBox.h>
+#include <Core/GeometryPrimitives/Point.h>
+#include <Core/GeometryPrimitives/Transform.h>
+#include <Core/GeometryPrimitives/Vector.h>
 
 #include <Core/Basis/Locate.h>
 #include <Core/Basis/CrvLinearLgn.h>
 #include <Core/Basis/CrvQuadraticLgn.h>
 #include <Core/Basis/CrvCubicHmt.h>
 
+#include <Core/Thread/Mutex.h>
+
+#include <Core/Datatypes/Mesh/VirtualMeshFacade.h>
 #include <Core/Datatypes/Legacy/Field/FieldIterator.h>
 #include <Core/Datatypes/Legacy/Field/FieldRNG.h>
 #include <Core/Datatypes/Legacy/Field/Mesh.h>
 #include <Core/Datatypes/Legacy/Field/VMesh.h>
 
-//! Incude needed for Windows: declares SCISHARE
 #include <Core/Datatypes/Legacy/Field/share.h>
 
 namespace SCIRun {
@@ -63,20 +64,20 @@ namespace SCIRun {
 template <class Basis> class CurveMesh;
 
 //! make sure any other mesh other than the preinstantiate ones
-//! returns no virtual interface. Altering this behaviour will allow
-//! for dynamically compiling the interfae if needed.
+//! returns no virtual interface. Altering this behavior will allow
+//! for dynamically compiling the interface if needed.
 template<class MESH>
 VMesh* CreateVCurveMesh(MESH*) { return (0); }
 
 #if (SCIRUN_CURVE_SUPPORT > 0)
 //! Declare that these can be found in a library that is already
 //! precompiled. So dynamic compilation will not instantiate them again.
-SCISHARE VMesh* CreateVCurveMesh(CurveMesh<CrvLinearLgn<Point> >* mesh);
+SCISHARE VMesh* CreateVCurveMesh(CurveMesh<Core::Basis::CrvLinearLgn<Core::Geometry::Point> >* mesh);
 #if (SCIRUN_QUADRATIC_SUPPORT > 0)
-SCISHARE VMesh* CreateVCurveMesh(CurveMesh<CrvQuadraticLgn<Point> >* mesh);
+SCISHARE VMesh* CreateVCurveMesh(CurveMesh<Core::Basis::CrvQuadraticLgn<Core::Geometry::Point> >* mesh);
 #endif
 #if (SCIRUN_CUBIC_SUPPORT > 0)
-SCISHARE VMesh* CreateVCurveMesh(CurveMesh<CrvCubicHmt<Point> >* mesh);
+SCISHARE VMesh* CreateVCurveMesh(CurveMesh<Core::Basis::CrvCubicHmt<Core::Geometry::Point> >* mesh);
 #endif
 
 #endif
@@ -102,7 +103,7 @@ public:
   typedef SCIRun::size_type             size_type;
   typedef SCIRun::mask_type             mask_type; 
   
-  typedef LockingHandle<CurveMesh<Basis> > handle_type;
+  typedef boost::shared_ptr<CurveMesh<Basis> > handle_type;
   typedef Basis                            basis_type;
 
   //! Index and Iterator types required for Mesh Concept.
@@ -176,11 +177,11 @@ public:
     }
 
     inline
-    const Point &node0() const {
+    const Core::Geometry::Point &node0() const {
       return mesh_.points_[mesh_.edges_[2*index_]];
     }
     inline
-    const Point &node1() const {
+    const Core::Geometry::Point &node1() const {
       return mesh_.points_[mesh_.edges_[2*index_+1]];
     }
 
@@ -199,7 +200,6 @@ public:
 
   //////////////////////////////////////////////////////////////////
 
-  //! Construct a new mesh
   CurveMesh();
   
   //! Copy a mesh, needed for detaching the mesh from a field 
@@ -207,15 +207,19 @@ public:
   
   //! Clone function for detaching the mesh and automatically generating
   //! a new version if needed.
-  virtual CurveMesh *clone() { return new CurveMesh(*this); }
+  virtual CurveMesh *clone() const { return new CurveMesh(*this); }
 
-  //! Destructor
+  MeshFacadeHandle getFacade() const
+  {
+    return boost::make_shared<Core::Datatypes::VirtualMeshFacade<VMesh>>(vmesh_);
+  }
+
   virtual ~CurveMesh(); 
 
   //! Obtain the virtual interface pointer
-  virtual VMesh* vmesh() { return (vmesh_.get_rep()); }
+  virtual VMesh* vmesh() { return (vmesh_.get()); }
 
-  //! This one should go at some point, should be reroute throught the
+  //! This one should go at some point, should be reroute through the
   //! virtual interface
   virtual int basis_order() { return (basis_.polynomial_order()); }
 
@@ -229,16 +233,16 @@ public:
     { return (Mesh::UNSTRUCTURED | Mesh::IRREGULAR); }
 
   //! Get the bounding box of the field
-  virtual BBox get_bounding_box() const;
+  virtual Core::Geometry::BBox get_bounding_box() const;
 
   //! Return the transformation that takes a 0-1 space bounding box 
   //! to the current bounding box of this mesh.  
-  virtual void get_canonical_transform(Transform &t) const;
+  virtual void get_canonical_transform(Core::Geometry::Transform &t) const;
 
   virtual void compute_bounding_box();
   
   //! Transform a field
-  virtual void transform(const Transform &t);
+  virtual void transform(const Core::Geometry::Transform &t);
   
   //! Check whether mesh can be altered by adding nodes or elements
   virtual bool is_editable() const { return (true); }
@@ -392,15 +396,15 @@ public:
   }
 
   //! get the center point (in object space) of an element
-  void get_center(Point &result, typename Node::index_type idx) const
+  void get_center(Core::Geometry::Point &result, typename Node::index_type idx) const
   { result = points_[idx]; }
-  void get_center(Point &, typename Edge::index_type) const;
-  void get_center(Point &, typename Face::index_type) const
+  void get_center(Core::Geometry::Point &, typename Edge::index_type) const;
+  void get_center(Core::Geometry::Point &, typename Face::index_type) const
   { ASSERTFAIL("This mesh type does not have faces use \"elem\"."); }
-  void get_center(Point &, typename Cell::index_type) const
+  void get_center(Core::Geometry::Point &, typename Cell::index_type) const
   { ASSERTFAIL("This mesh type does not have cells use \"elem\"."); }
 
-  const Point &point(typename Node::index_type i) const { return points_[i]; }
+  const Core::Geometry::Point &point(typename Node::index_type i) const { return points_[i]; }
 
   //! Get the size of an element (length, area, volume)
   double get_size(typename Node::index_type /*idx*/) const 
@@ -450,49 +454,49 @@ public:
   }
 
   //! Locate a point in a mesh, find which is the closest node
-  bool locate(typename Node::index_type &i, const Point &p) const
+  bool locate(typename Node::index_type &i, const Core::Geometry::Point &p) const
   { return(locate_node(i,p)); }
-  bool locate(typename Edge::index_type &i, const Point &p) const
+  bool locate(typename Edge::index_type &i, const Core::Geometry::Point &p) const
   { return(locate_elem(i,p)); }
-  bool locate(typename Face::index_type &, const Point &) const
+  bool locate(typename Face::index_type &, const Core::Geometry::Point &) const
   { ASSERTFAIL("This mesh type does not have faces use \"elem\"."); }
-  bool locate(typename Cell::index_type &, const Point &) const
+  bool locate(typename Cell::index_type &, const Core::Geometry::Point &) const
   { ASSERTFAIL("This mesh type does not have cells use \"elem\"."); }
 
 
   //! These should become obsolete soon, they do not follow the concept
   //! of the basis functions....
-  int get_weights(const Point &p, typename Node::array_type &l, double *w);
-  int get_weights(const Point &p, typename Edge::array_type &l, double *w);
+  int get_weights(const Core::Geometry::Point &p, typename Node::array_type &l, double *w);
+  int get_weights(const Core::Geometry::Point &p, typename Edge::array_type &l, double *w);
 
-  int get_weights(const Point &, typename Face::array_type &, double *)
+  int get_weights(const Core::Geometry::Point &, typename Face::array_type &, double *)
   { ASSERTFAIL("This mesh type does not have faces use \"elem\"."); }  
-  int get_weights(const Point &, typename Cell::array_type &, double *)
+  int get_weights(const Core::Geometry::Point &, typename Cell::array_type &, double *)
   { ASSERTFAIL("This mesh type does not have cells use \"elem\"."); }
 
   //! Access the nodes of the mesh
-  void get_point(Point &result, typename Node::index_type idx) const
+  void get_point(Core::Geometry::Point &result, typename Node::index_type idx) const
     { get_center(result,idx); }
-  void set_point(const Point &point, typename Node::index_type index)
+  void set_point(const Core::Geometry::Point &point, typename Node::index_type index)
     { points_[index] = point; }
-  void get_random_point(Point &p, typename Elem::index_type i, FieldRNG &r) const;
+  void get_random_point(Core::Geometry::Point &p, typename Elem::index_type i, FieldRNG &r) const;
 
   //! Normals for visualizations
-  void get_normal(Vector&, typename Node::index_type) const
+  void get_normal(Core::Geometry::Vector&, typename Node::index_type) const
     { ASSERTFAIL("CurveMesh: This mesh type does not have node normals."); }
   
   template<class VECTOR, class INDEX1, class INDEX2>
-  void get_normal(Vector&, VECTOR&, INDEX1, INDEX2) const
+  void get_normal(Core::Geometry::Vector&, VECTOR&, INDEX1, INDEX2) const
     { ASSERTFAIL("CurveMesh: This mesh type does not have element normals."); }
 
   //! use these to build up a new contour mesh
-  typename Node::index_type add_node(const Point &p)
+  typename Node::index_type add_node(const Core::Geometry::Point &p)
   {
     points_.push_back(p);
     return static_cast<under_type>(points_.size() - 1);
   }
   
-  typename Node::index_type add_point(const Point &point)
+  typename Node::index_type add_point(const Core::Geometry::Point &point)
     { return add_node(point); }
     
   typename Edge::index_type add_edge(typename Node::index_type i1,
@@ -523,7 +527,7 @@ public:
   //! This function uses a couple of newton iterations to find the local
   //! coordinate of a point
   template<class VECTOR, class INDEX>
-  bool get_coords(VECTOR &coords,const Point &p,INDEX idx) const
+  bool get_coords(VECTOR &coords,const Core::Geometry::Point &p,INDEX idx) const
   {
     ElemData ed(*this, idx);
     return basis_.get_coords(coords, p, ed);
@@ -532,7 +536,7 @@ public:
   //! Find the location in the global coordinate system for a local coordinate
   //! This function is the opposite of get_coords.
   template<class VECTOR, class INDEX>
-  void interpolate(Point &pt, const VECTOR &coords, INDEX idx) const
+  void interpolate(Core::Geometry::Point &pt, const VECTOR &coords, INDEX idx) const
   {
     ElemData ed(*this, idx);
     pt = basis_.interpolate(coords, ed);
@@ -564,11 +568,11 @@ public:
   template<class VECTOR, class INDEX>
   void jacobian(const VECTOR& coords, INDEX idx, double* J) const
   {
-    StackVector<Point,1> Jv;
+    StackVector<Core::Geometry::Point,1> Jv;
     ElemData ed(*this,idx);
     basis_.derivate(coords,ed,Jv);
-    Vector Jv1, Jv2;
-    Jv[0].asVector().find_orthogonal(Jv1,Jv2);
+    Core::Geometry::Vector Jv1, Jv2;
+    Core::Geometry::Vector(Jv[0]).find_orthogonal(Jv1,Jv2);
     J[0] = Jv[0].x();
     J[1] = Jv[0].y();
     J[2] = Jv[0].z();
@@ -586,12 +590,12 @@ public:
   template<class VECTOR, class INDEX>
   double inverse_jacobian(const VECTOR& coords, INDEX idx, double* Ji) const
   {
-    StackVector<Point,1> Jv;
+    StackVector<Core::Geometry::Point,1> Jv;
     ElemData ed(*this,idx);
     basis_.derivate(coords,ed,Jv);
     double J[9];
-    Vector Jv1, Jv2;
-    Jv[0].asVector().find_orthogonal(Jv1,Jv2);
+    Core::Geometry::Vector Jv1, Jv2;
+    Core::Geometry::Vector(Jv[0]).find_orthogonal(Jv1,Jv2);
     J[0] = Jv[0].x();
     J[1] = Jv[0].y();
     J[2] = Jv[0].z();
@@ -608,15 +612,15 @@ public:
   template<class INDEX>
   double scaled_jacobian_metric(INDEX idx) const
   {
-    StackVector<Point,3> Jv;
+    StackVector<Core::Geometry::Point,3> Jv;
     ElemData ed(*this,idx);
 
     double temp;
 
     basis_.derivate(basis_.unit_center,ed,Jv);
     Jv.resize(3); 
-    Vector v,w;
-    Jv[0].asVector().find_orthogonal(v,w);
+    Core::Geometry::Vector v,w;
+    Core::Geometry::Vector(Jv[0]).find_orthogonal(v,w);
     Jv[1] = v.asPoint();
     Jv[2] = w.asPoint();
     double min_jacobian = ScaledDetMatrix3P(Jv);
@@ -626,7 +630,7 @@ public:
     {
       basis_.derivate(basis_.unit_vertices[j],ed,Jv);
       Jv.resize(3); 
-      Jv[0].asVector().find_orthogonal(v,w);
+      Core::Geometry::Vector(Jv[0]).find_orthogonal(v,w);
       Jv[1] = v.asPoint();
       Jv[2] = w.asPoint();
       temp = ScaledDetMatrix3P(Jv);
@@ -640,15 +644,15 @@ public:
   template<class INDEX>
   double jacobian_metric(INDEX idx) const
   {
-    StackVector<Point,3> Jv;
+    StackVector<Core::Geometry::Point,3> Jv;
     ElemData ed(*this,idx);
 
     double temp;
 
     basis_.derivate(basis_.unit_center,ed,Jv);
     Jv.resize(3); 
-    Vector v,w;
-    Jv[0].asVector().find_orthogonal(v,w);
+    Core::Geometry::Vector v,w;
+    Core::Geometry::Vector(Jv[0]).find_orthogonal(v,w);
     Jv[1] = v.asPoint();
     Jv[2] = w.asPoint();
     double min_jacobian = DetMatrix3P(Jv);
@@ -658,7 +662,7 @@ public:
     {
       basis_.derivate(basis_.unit_vertices[j],ed,Jv);
       Jv.resize(3); 
-      Jv[0].asVector().find_orthogonal(v,w);
+      Core::Geometry::Vector(Jv[0]).find_orthogonal(v,w);
       Jv[1] = v.asPoint();
       Jv[2] = w.asPoint();
       temp = DetMatrix3P(Jv);
@@ -670,7 +674,7 @@ public:
 
 
   template <class INDEX>
-  bool locate_node(INDEX &idx, const Point &p) const
+  bool locate_node(INDEX &idx, const Core::Geometry::Point &p) const
   {
     typename Node::size_type sz; size(sz);
   
@@ -707,7 +711,7 @@ public:
 
 
   template <class INDEX>
-  bool locate_elem(INDEX &idx, const Point &p) const
+  bool locate_elem(INDEX &idx, const Core::Geometry::Point &p) const
   {
     if (basis_.polynomial_order() > 1) return elem_locate(idx, *this, p);
     
@@ -742,7 +746,7 @@ public:
   }
 
   template <class ARRAY>
-  bool locate_elems(ARRAY &array, const BBox &b) const
+  bool locate_elems(ARRAY &array, const Core::Geometry::BBox &b) const
   {
     array.clear();
     
@@ -754,8 +758,8 @@ public:
     while (ei != eie)
     {
       get_nodes(nodes,*ei);
-      BBox be(points_[nodes[0]],points_[nodes[1]]);
-      if (b.intersect(be) != BBox::OUTSIDE)
+      Core::Geometry::BBox be(points_[nodes[0]],points_[nodes[1]]);
+      if (b.intersect(be) != Core::Geometry::BBox::OUTSIDE)
       {
         size_t p=0;
         for (;p<array.size();p++) if (array[p] == typename ARRAY::value_type(*ei)) break;
@@ -770,7 +774,7 @@ public:
 
 
   template <class INDEX, class ARRAY>
-  bool locate_elem(INDEX &idx, ARRAY& coords, const Point &p) const
+  bool locate_elem(INDEX &idx, ARRAY& coords, const Core::Geometry::Point &p) const
   {
     if (basis_.polynomial_order() > 1) return elem_locate(idx, *this, p);
     
@@ -809,16 +813,16 @@ public:
 
   //! Find the closest element to a point
   template <class INDEX>
-  bool find_closest_node(double& pdist, Point &result, 
-                         INDEX &idx, const Point &point) const
+  bool find_closest_node(double& pdist, Core::Geometry::Point &result, 
+                         INDEX &idx, const Core::Geometry::Point &point) const
   {
     return(find_closest_node(pdist,result,idx,point,-1.0));
   }
 
   //! Find the closest element to a point
   template <class INDEX>
-  bool find_closest_node(double& pdist, Point &result, 
-                         INDEX &idx, const Point &point,
+  bool find_closest_node(double& pdist, Core::Geometry::Point &result, 
+                         INDEX &idx, const Core::Geometry::Point &point,
                          double maxdist) const
   {
     if (maxdist < 0.0) maxdist = DBL_MAX; else maxdist = maxdist*maxdist;
@@ -827,7 +831,7 @@ public:
     //! If there are no nodes we cannot find the closest one
     if (sz == 0) return (false);
 
-    Point r;
+    Core::Geometry::Point r;
     double dist;
 
     if (idx >= 0 && idx < sz)
@@ -874,7 +878,7 @@ public:
   }
 
   template <class ARRAY>
-  bool find_closest_nodes(ARRAY &nodes, const Point &point, double maxdist) const
+  bool find_closest_nodes(ARRAY &nodes, const Core::Geometry::Point &point, double maxdist) const
   {
     nodes.clear();
     double maxdist2 = maxdist*maxdist;
@@ -900,7 +904,7 @@ public:
   template <class ARRAY1, class ARRAY2>
   bool find_closest_nodes(ARRAY1 &distances,
                           ARRAY2 &nodes, 
-                          const Point &point, double maxdist) const
+                          const Core::Geometry::Point &point, double maxdist) const
   {
     distances.clear();
     nodes.clear();
@@ -927,10 +931,10 @@ public:
   //! Find the closest element to a point
   template <class INDEX, class ARRAY>
   bool find_closest_elem(double &pdist, 
-                         Point &result, 
+                         Core::Geometry::Point &result, 
                          ARRAY &coords,
                          INDEX &idx, 
-                         const Point &p) const
+                         const Core::Geometry::Point &p) const
   {
     return (find_closest_elem(pdist,result,coords,idx,p,-1.0));
   }
@@ -938,10 +942,10 @@ public:
   //! Find the closest element to a point
   template <class INDEX, class ARRAY>
   bool find_closest_elem(double &pdist, 
-                         Point &result, 
+                         Core::Geometry::Point &result, 
                          ARRAY &coords,
                          INDEX &idx, 
-                         const Point &p,
+                         const Core::Geometry::Point &p,
                          double maxdist) const
   {
     if (maxdist < 0.0) maxdist = DBL_MAX; else maxdist = maxdist*maxdist;
@@ -968,7 +972,7 @@ public:
     }
     
     double mindist = maxdist;
-    Point res;
+    Core::Geometry::Point res;
 
     typename Elem::iterator ni; begin(ni);
     typename Elem::iterator nie; end(nie);
@@ -1000,9 +1004,9 @@ public:
   
   template <class INDEX>
   bool find_closest_elem(double& pdist, 
-                         Point &result, 
+                         Core::Geometry::Point &result, 
                          INDEX &elem, 
-                         const Point &p) const
+                         const Core::Geometry::Point &p) const
   { 
     StackVector<double,1> coords;
     return(find_closest_elem(pdist,result,coords,elem,p,-1.0));
@@ -1010,8 +1014,8 @@ public:
   
   //! Find the closest elements to a point
   template<class ARRAY>
-  bool find_closest_elems(double& pdist, Point &result, 
-                          ARRAY &elems, const Point &p) const
+  bool find_closest_elems(double& pdist, Core::Geometry::Point &result, 
+                          ARRAY &elems, const Core::Geometry::Point &p) const
   {  
     elems.clear();
     
@@ -1025,7 +1029,7 @@ public:
 
     double dist;
     double mindist = DBL_MAX;
-    Point res;
+    Core::Geometry::Point res;
     
     while(ni != nie)
     {
@@ -1081,7 +1085,7 @@ public:
   //! This function returns a maker for Pio.
   static Persistent *maker() { return new CurveMesh<Basis>(); }
   //! This function returns a handle for the virtual interface.
-  static MeshHandle mesh_maker() { return new CurveMesh<Basis>(); }
+  static MeshHandle mesh_maker() { return boost::make_shared<CurveMesh<Basis>>(); }
 
 
   //! Functions local to CurveMesh, the latter are not thread safe
@@ -1092,7 +1096,7 @@ public:
 		     static_cast<index_type>(0),
 		     static_cast<index_type>(points_.size()));
 
-    std::vector<Point>::iterator niter;
+    std::vector<Core::Geometry::Point>::iterator niter;
     niter = points_.begin() + i1;
     points_.erase(niter);
     return static_cast<typename Node::index_type>(points_.size() - 1);
@@ -1109,10 +1113,10 @@ public:
 		     static_cast<index_type>(0),
 		     static_cast<index_type>(points_.size()+1));
 
-    std::vector<Point>::iterator niter1;
+    std::vector<Core::Geometry::Point>::iterator niter1;
     niter1 = points_.begin() + i1;
 
-    std::vector<Point>::iterator niter2;
+    std::vector<Core::Geometry::Point>::iterator niter2;
     niter2 = points_.begin() + i2;
 
     points_.erase(niter1, niter2);
@@ -1292,9 +1296,9 @@ protected:
     }
   }
 
-  bool inside2_p(index_type idx, const Point &p, double& coord) const;
-  double distance2_p(index_type idx, const Point &p, 
-                     Point& projection, double& coord) const;
+  bool inside2_p(index_type idx, const Core::Geometry::Point &p, double& coord) const;
+  double distance2_p(index_type idx, const Core::Geometry::Point &p, 
+                     Core::Geometry::Point& projection, double& coord) const;
   
   void compute_node_neighbors();
 
@@ -1302,7 +1306,7 @@ protected:
   // Actual data stored in the mesh
   
   //! Vector with the node locations
-  std::vector<Point>           points_;
+  std::vector<Core::Geometry::Point>           points_;
   //! Vector with connectivity data
   std::vector<index_type>      edges_;
   //! The basis function, contains additional information on elements
@@ -1311,14 +1315,14 @@ protected:
   //! Record which parts of the mesh are synchronized
   mask_type               synchronized_;
   //! Lock to synchronize between threads
-  mutable Mutex           synchronize_lock_;
+  mutable Core::Thread::Mutex           synchronize_lock_;
 
   //! Vector indicating which edges are conected to which
   //! node. This is the reverse of the connectivity data
   //! stored in the edges_ array.
   typedef std::vector<std::vector<typename Edge::index_type> > NodeNeighborMap;
   NodeNeighborMap         node_neighbors_;
-  BBox                    bbox_; 
+  Core::Geometry::BBox                    bbox_; 
   double                  epsilon_;
   double                  epsilon2_;
   double                  epsilon3_;
@@ -1326,7 +1330,7 @@ protected:
   //! Pointer to virtual interface
   //! This one is created as soon as the mesh is generated
   //! Put this one in a handle as we have a virtual destructor
-  Handle<VMesh>           vmesh_;
+  boost::shared_ptr<VMesh>           vmesh_;
 };
 
 
@@ -1339,7 +1343,7 @@ CurveMesh<Basis>::CurveMesh() :
 {
   DEBUG_CONSTRUCTOR("CurveMesh")   
   //! Initialize the virtual interface when the mesh is created
-  vmesh_ = CreateVCurveMesh(this);
+  vmesh_.reset(CreateVCurveMesh(this));
 }
   
 template<class Basis>
@@ -1369,7 +1373,7 @@ CurveMesh<Basis>::CurveMesh(const CurveMesh &copy) :
   //! Create a new virtual interface for this copy
   //! all pointers have changed hence create a new
   //! virtual interface class
-  vmesh_ = CreateVCurveMesh(this);
+  vmesh_.reset(CreateVCurveMesh(this));
 }
   
 template<class Basis>
@@ -1390,9 +1394,9 @@ const TypeDescription* get_type_description(CurveMesh<Basis> *)
     TypeDescription::td_vec *subs = new TypeDescription::td_vec(1);
     (*subs)[0] = sub;
     td = new TypeDescription("CurveMesh", subs,
-                                std::string(__FILE__),
-                                "SCIRun",
-                                TypeDescription::MESH_E);
+      std::string(__FILE__),
+      "SCIRun",
+      TypeDescription::MESH_E);
   }
   return td;
 }
@@ -1402,7 +1406,7 @@ template <class Basis>
 const TypeDescription*
 CurveMesh<Basis>::get_type_description() const
 {
-  return get_type_description((CurveMesh<Basis> *)0);
+  return SCIRun::get_type_description((CurveMesh<Basis> *)0);
 }
 
 
@@ -1414,7 +1418,7 @@ CurveMesh<Basis>::node_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((CurveMesh<Basis> *)0);
+      SCIRun::get_type_description((CurveMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Node",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1432,7 +1436,7 @@ CurveMesh<Basis>::edge_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((CurveMesh<Basis> *)0);
+      SCIRun::get_type_description((CurveMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Edge",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1450,7 +1454,7 @@ CurveMesh<Basis>::face_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((CurveMesh<Basis> *)0);
+      SCIRun::get_type_description((CurveMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Face",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1468,7 +1472,7 @@ CurveMesh<Basis>::cell_type_description()
   if (!td)
   {
     const TypeDescription *me =
-      get_type_description((CurveMesh<Basis> *)0);
+      SCIRun::get_type_description((CurveMesh<Basis> *)0);
     td = new TypeDescription(me->get_name() + "::Cell",
                                 std::string(__FILE__),
                                 "SCIRun",
@@ -1487,10 +1491,10 @@ CurveMesh<Basis>::curvemesh_typeid(type_name(-1), "Mesh", CurveMesh<Basis>::make
 // Functions in the mesh
 
 template <class Basis>
-BBox
+Core::Geometry::BBox
 CurveMesh<Basis>::get_bounding_box() const
 {
-  BBox result;
+  Core::Geometry::BBox result;
 
   // Compute bounding box
   typename Node::iterator ni, nie;
@@ -1507,12 +1511,12 @@ CurveMesh<Basis>::get_bounding_box() const
 
 template <class Basis>
 void 
-CurveMesh<Basis>::get_canonical_transform(Transform &t) const
+CurveMesh<Basis>::get_canonical_transform(Core::Geometry::Transform &t) const
 {
   t.load_identity();
-  BBox bbox = get_bounding_box();
+  Core::Geometry::BBox bbox = get_bounding_box();
   t.pre_scale(bbox.diagonal());
-  t.pre_translate(Vector(bbox.min()));
+  t.pre_translate(Core::Geometry::Vector(bbox.min()));
 }
 
 template <class Basis>
@@ -1543,10 +1547,10 @@ CurveMesh<Basis>::compute_bounding_box()
 
 template <class Basis>
 void
-CurveMesh<Basis>::transform(const Transform &t)
+CurveMesh<Basis>::transform(const Core::Geometry::Transform &t)
 {
-  std::vector<Point>::iterator itr = points_.begin();
-  std::vector<Point>::iterator eitr = points_.end();
+  auto itr = points_.begin();
+  auto eitr = points_.end();
   while (itr != eitr)
   {
     *itr = t.project(*itr);
@@ -1558,7 +1562,7 @@ CurveMesh<Basis>::transform(const Transform &t)
   size_type num_enodes = static_cast<size_type>(basis_.size_node_values());
   for (size_type i=0; i<num_enodes; i++)
   {
-    Point p;
+    Core::Geometry::Point p;
     basis_.get_node_value(p,i);
     p =t.project(p);
     basis_.set_node_value(p,i);
@@ -1574,7 +1578,7 @@ double
 CurveMesh<Basis>::get_size(typename Edge::index_type idx) const
 {
   ElemData ed(*this, idx);
-  std::vector<Point> pledge;
+  std::vector<Core::Geometry::Point> pledge;
   std::vector<std::vector<double> > coords;
   // Perhaps there is a better choice for the number of divisions.
   pwl_approx_edge(coords, idx, 0, 5);
@@ -1586,9 +1590,9 @@ CurveMesh<Basis>::get_size(typename Edge::index_type idx) const
   {
     std::vector<double> &c0 = *iter++;
     std::vector<double> &c1 = *last++;
-    Point p0 = basis_.interpolate(c0, ed);
-    Point p1 = basis_.interpolate(c1, ed);
-    total += (p1.asVector() - p0.asVector()).length();
+    Core::Geometry::Point p0 = basis_.interpolate(c0, ed);
+    Core::Geometry::Point p1 = basis_.interpolate(c1, ed);
+    total += (p1 - p0).length();
   }
   return total;
 }
@@ -1596,7 +1600,7 @@ CurveMesh<Basis>::get_size(typename Edge::index_type idx) const
 
 template <class Basis>
 void
-CurveMesh<Basis>::get_center(Point &result,
+CurveMesh<Basis>::get_center(Core::Geometry::Point &result,
                              typename Edge::index_type idx) const
 {
   ElemData cmcd(*this, idx);
@@ -1607,7 +1611,7 @@ CurveMesh<Basis>::get_center(Point &result,
 
 template <class Basis>
 int
-CurveMesh<Basis>::get_weights(const Point &p, typename Node::array_type &l,
+CurveMesh<Basis>::get_weights(const Core::Geometry::Point &p, typename Node::array_type &l,
                               double *w)
 {
   typename Edge::index_type idx;
@@ -1627,7 +1631,7 @@ CurveMesh<Basis>::get_weights(const Point &p, typename Node::array_type &l,
 
 template <class Basis>
 int
-CurveMesh<Basis>::get_weights(const Point &p, typename Edge::array_type &l,
+CurveMesh<Basis>::get_weights(const Core::Geometry::Point &p, typename Edge::array_type &l,
                               double *w)
 {
   typename Edge::index_type idx;
@@ -1644,12 +1648,12 @@ CurveMesh<Basis>::get_weights(const Point &p, typename Edge::array_type &l,
 
 template <class Basis>
 void
-CurveMesh<Basis>::get_random_point(Point &p,
+CurveMesh<Basis>::get_random_point(Core::Geometry::Point &p,
                                    typename Elem::index_type ei,
                                    FieldRNG &rng) const
 {
-  const Point &p0 = points_[edges_[2*ei]];
-  const Point &p1 = points_[edges_[2*ei+1]];
+  const Core::Geometry::Point &p0 = points_[edges_[2*ei]];
+  const Core::Geometry::Point &p1 = points_[edges_[2*ei+1]];
 
   p = p0 + (p1 - p0) * rng();
 }
@@ -1759,7 +1763,7 @@ CurveMesh<Basis>::io(Piostream& stream)
   stream.end_class();
 
   if (stream.reading())
-    vmesh_ = CreateVCurveMesh(this);
+    vmesh_.reset(CreateVCurveMesh(this));
 }
 
 
@@ -1883,16 +1887,16 @@ CurveMesh<Basis>::size(typename CurveMesh<Basis>::Cell::size_type &s) const
 
 template <class Basis>
 bool
-CurveMesh<Basis>::inside2_p(index_type i, const Point &p, double& alpha) const
+CurveMesh<Basis>::inside2_p(index_type i, const Core::Geometry::Point &p, double& alpha) const
 {
   const index_type j = 2*i;
-  const Point &p0 = points_[edges_[j]];
-  const Point &p1 = points_[edges_[j+1]];
+  const Core::Geometry::Point &p0 = points_[edges_[j]];
+  const Core::Geometry::Point &p1 = points_[edges_[j+1]];
 
-  const Vector v = p0-p1;
+  const Core::Geometry::Vector v = p0-p1;
   alpha = Dot(p0-p,v)/v.length2();
   
-  Point point;
+  Core::Geometry::Point point;
   if (alpha < 0.0) { point = p0; alpha = 0.0; }
   else if (alpha > 1.0) { point = p1; alpha = 1.0; }
   else { point = (alpha*p1 + (1.0-alpha)*p0).asPoint(); }
@@ -1905,14 +1909,14 @@ CurveMesh<Basis>::inside2_p(index_type i, const Point &p, double& alpha) const
 
 template <class Basis>
 double
-CurveMesh<Basis>::distance2_p(index_type i, const Point& p, 
-                              Point& result, double& alpha) const
+CurveMesh<Basis>::distance2_p(index_type i, const Core::Geometry::Point& p, 
+                              Core::Geometry::Point& result, double& alpha) const
 {
   const index_type j = 2*i;
-  const Point &p0 = points_[edges_[j]];
-  const Point &p1 = points_[edges_[j+1]];
+  const Core::Geometry::Point &p0 = points_[edges_[j]];
+  const Core::Geometry::Point &p1 = points_[edges_[j+1]];
 
-  const Vector v = p0-p1;
+  const Core::Geometry::Vector v = p0-p1;
   alpha = Dot(p0-p,v)/v.length2();
 
   if (alpha < 0.0) { result = p0; alpha = 0.0;}

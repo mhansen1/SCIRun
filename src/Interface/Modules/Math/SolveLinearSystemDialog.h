@@ -33,15 +33,12 @@
 #include <boost/shared_ptr.hpp>
 #include <Modules/Basic/SendScalarModuleState.h>
 #include <Interface/Modules/Base/ModuleDialogGeneric.h>
-#include <Interface/Modules/Math/Share.h>
+#include <Interface/Modules/Math/share.h>
 
 namespace SCIRun {
 namespace Gui {
   
-  //TODO DAN
-
 class SCISHARE SolveLinearSystemDialog : public ModuleDialogGeneric, 
-  //public SCIRun::State::SendScalarState, 
   public Ui::SolveLinearSystem
 {
 	Q_OBJECT
@@ -54,6 +51,8 @@ public:
 
 private Q_SLOTS:
   void pushParametersToState();
+private:
+  boost::shared_ptr<class SolveLinearSystemDialogImpl> impl_;
 };
 
 }

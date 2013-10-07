@@ -40,6 +40,7 @@
 #include <Interface/Application/ModuleLogWindow.h>
 #include <Interface/Application/NoteEditor.h>
 #include <Interface/Application/ClosestPortFinder.h>
+#include <Interface/Application/Utility.h>
 #include <Interface/Modules/Factory/ModuleDialogFactory.h>
 
 //TODO: BAD, or will we have some sort of Application global anyway?
@@ -51,59 +52,23 @@ using namespace SCIRun::Gui;
 using namespace SCIRun::Dataflow::Networks;
 using namespace SCIRun::Core::Logging;
 
+ProxyWidgetPosition::ProxyWidgetPosition(QGraphicsProxyWidget* widget, const QPointF& offset/* = QPointF()*/) : widget_(widget), offset_(offset) 
+{
+}
+
 QPointF ProxyWidgetPosition::currentPosition() const
 {
   return widget_->pos() + offset_;
 }
 
-namespace {
-//TODO move to separate header
-  QColor to_color(const std::string& str)
-  {
-    if (str == "red")
-      return Qt::red;
-    if (str == "blue")
-      return Qt::blue;
-    if (str == "darkBlue")
-      return Qt::darkBlue;
-    if (str == "cyan")
-      return Qt::cyan;
-    if (str == "darkCyan")
-      return Qt::darkCyan;
-    if (str == "darkGreen")
-      return Qt::darkGreen;
-    if (str == "cyan")
-      return Qt::cyan;
-    if (str == "magenta")
-      return Qt::magenta;
-    if (str == "white")
-      return Qt::white;
-    if (str == "yellow")
-      return Qt::yellow;
-    if (str == "darkYellow")
-      return Qt::darkYellow;
-    if (str == "lightGray")
-      return Qt::lightGray;
-    if (str == "darkGray")
-      return Qt::darkGray;
-    if (str == "black")
-      return Qt::black;
-    else
-      return Qt::black;
-  }
+QPointF ProxyWidgetPosition::mapToScene(const QPointF &point) const
+{
+  return widget_->mapToScene(point);
+}
 
-  QAction* separatorAction(QWidget* parent)
-  {
-    auto sep = new QAction(parent);
-    sep->setSeparator(true);
-    return sep;
-  }
-
-  QAction* disabled(QAction* action)
-  {
-    action->setEnabled(false);
-    return action;
-  }
+QPointF ProxyWidgetPosition::mapFromScene(const QPointF &point) const
+{
+  return widget_->mapFromScene(point);
 }
 
 namespace SCIRun {
@@ -111,7 +76,7 @@ namespace Gui {
   class ModuleActionsMenu
   {
   public:
-    ModuleActionsMenu(ModuleWidget* parent, const std::string& moduleId)
+    ModuleActionsMenu(QWidget* parent, const std::string& moduleId)
     {
       menu_ = new QMenu("Actions", parent);
 
@@ -158,6 +123,7 @@ namespace
 ModuleWidget::ModuleWidget(const QString& name, SCIRun::Dataflow::Networks::ModuleHandle theModule, QWidget* parent /* = 0 */)
   : QFrame(parent),
   deletedFromGui_(true),
+  colorLocked_(false),
   moduleId_(theModule->get_id()),
   theModule_(theModule),
   inputPortLayout_(0),
@@ -193,7 +159,7 @@ ModuleWidget::ModuleWidget(const QString& name, SCIRun::Dataflow::Networks::Modu
   makeOptionsDialog();
 
   connect(helpButton_, SIGNAL(clicked()), this, SLOT(launchDocumentation()));
-  connect(this, SIGNAL(styleSheetUpdated(const QString&)), this, SLOT(updateStyleSheet(const QString&)));
+  connect(this, SIGNAL(backgroundColorUpdated(const QString&)), this, SLOT(updateBackgroundColor(const QString&)));
 
   setupModuleActions();
 
@@ -247,7 +213,7 @@ void ModuleWidget::resetProgressBar()
 
 void ModuleWidget::setupModuleActions()
 {
-  actionsMenu_.reset(new ModuleActionsMenu(this, moduleId_));
+  actionsMenu_.reset(new ModuleActionsMenu(moduleActionButton_, moduleId_));
 
   moduleActionButton_->setMenu(actionsMenu_->getMenu());
 }
@@ -263,7 +229,8 @@ void ModuleWidget::addPorts(const SCIRun::Dataflow::Networks::ModuleInfoProvider
   for (size_t i = 0; i < moduleInfoProvider.num_input_ports(); ++i)
   {
     InputPortHandle port = moduleInfoProvider.get_input_port(i);
-    InputPortWidget* w = new InputPortWidget(QString::fromStdString(port->get_portname()), to_color(port->get_colorname()), moduleId, i, connectionFactory_, closestPortFinder_, this);
+    auto type = port->get_typename();
+    InputPortWidget* w = new InputPortWidget(QString::fromStdString(port->get_portname()), to_color(PortColorLookup::toColor(type)), type, moduleId, i, connectionFactory_, closestPortFinder_, this);
     hookUpSignals(w);
     connect(this, SIGNAL(connectionAdded(const SCIRun::Dataflow::Networks::ConnectionDescription&)), w, SLOT(MakeTheConnection(const SCIRun::Dataflow::Networks::ConnectionDescription&)));
     addPort(w);
@@ -271,7 +238,8 @@ void ModuleWidget::addPorts(const SCIRun::Dataflow::Networks::ModuleInfoProvider
   for (size_t i = 0; i < moduleInfoProvider.num_output_ports(); ++i)
   {
     OutputPortHandle port = moduleInfoProvider.get_output_port(i);
-    OutputPortWidget* w = new OutputPortWidget(QString::fromStdString(port->get_portname()), to_color(port->get_colorname()), moduleId, i, connectionFactory_, closestPortFinder_, this);
+    auto type = port->get_typename();
+    OutputPortWidget* w = new OutputPortWidget(QString::fromStdString(port->get_portname()), to_color(PortColorLookup::toColor(type)), type, moduleId, i, connectionFactory_, closestPortFinder_, this);
     hookUpSignals(w);
     addPort(w);
   }
@@ -285,6 +253,8 @@ void ModuleWidget::hookUpSignals(PortWidget* port) const
   connect(port, SIGNAL(connectionDeleted(const SCIRun::Dataflow::Networks::ConnectionId&)), 
     this, SIGNAL(connectionDeleted(const SCIRun::Dataflow::Networks::ConnectionId&)));
   connect(this, SIGNAL(cancelConnectionsInProgress()), port, SLOT(cancelConnectionsInProgress()));
+  connect(port, SIGNAL(connectNewModule(const SCIRun::Dataflow::Networks::PortDescriptionInterface*, const std::string&)), 
+    this, SLOT(connectNewModule(const SCIRun::Dataflow::Networks::PortDescriptionInterface*, const std::string&)));
 }
 
 void ModuleWidget::addPort(OutputPortWidget* port)
@@ -293,7 +263,7 @@ void ModuleWidget::addPort(OutputPortWidget* port)
   {
     //TODO--extract method
     outputPortLayout_ = new QHBoxLayout;
-    outputPortLayout_->setSpacing(3);
+    outputPortLayout_->setSpacing(PORT_SPACING);
     outputPortLayout_->setAlignment(Qt::AlignLeft);
     verticalLayout->insertLayout(-1, outputPortLayout_);
   }
@@ -306,7 +276,7 @@ void ModuleWidget::addPort(InputPortWidget* port)
   if (!inputPortLayout_)
   {
     inputPortLayout_ = new QHBoxLayout;
-    inputPortLayout_->setSpacing(3);
+    inputPortLayout_->setSpacing(PORT_SPACING);
     inputPortLayout_->setAlignment(Qt::AlignLeft);
     verticalLayout->insertLayout(0, inputPortLayout_);
   }
@@ -314,12 +284,26 @@ void ModuleWidget::addPort(InputPortWidget* port)
   inputPorts_.push_back(port);
 }
 
+void ModuleWidget::printPortPositions() const
+{
+  std::cout << "Port positions for module " << moduleId_ << std::endl;
+  Q_FOREACH(PortWidget* p, boost::join(getInputPorts(), getOutputPorts()))
+  {
+    std::cout << "\t" << p->pos();
+  }
+  std::cout << std::endl;
+}
+
 ModuleWidget::~ModuleWidget()
 {
   Q_FOREACH (PortWidget* p, boost::join(inputPorts_, outputPorts_))
     p->deleteConnections();
   GuiLogger::Instance().log("Module deleted.");
-  dialog_.reset();
+  if (dialog_ != nullptr)
+  {
+    dialog_->close();
+    dialog_.reset();
+  }
   theModule_->setLogger(LoggerHandle());
   delete logWindow_;
   delete noteEditor_;
@@ -334,35 +318,41 @@ void ModuleWidget::trackConnections()
     p->trackConnections();
 }
 
-QPointF ModuleWidget::inputPortPosition() const 
-{
-  if (positionProvider_)
-    return positionProvider_->currentPosition() + QPointF(20,10);
-  return pos();
-}
-
-QPointF ModuleWidget::outputPortPosition() const 
-{
-  if (positionProvider_)
-    return positionProvider_->currentPosition() + QPointF(20, height() - 10);
-  return pos();
-}
-
 void ModuleWidget::execute()
 {
   {
-    Q_EMIT styleSheetUpdated("background-color: #AACCAA;");
+    Q_EMIT backgroundColorUpdated("#AACCAA;");
+    //colorLocked_ = true; //TODO
     timer_.restart();
     theModule_->do_execute();
     Q_EMIT updateProgressBarSignal(1);
-    Q_EMIT styleSheetUpdated("background-color: lightgray;");
+    Q_EMIT backgroundColorUpdated("lightgray;");
+    //colorLocked_ = false;
   }
   Q_EMIT moduleExecuted();
 }
 
-void ModuleWidget::updateStyleSheet(const QString& sheet)
+void ModuleWidget::updateBackgroundColor(const QString& color)
 {
-  setStyleSheet(sheet);
+  if (!colorLocked_)
+  {
+    setStyleSheet("background-color: " + color);
+  }
+}
+
+void ModuleWidget::setColorAsWaiting()
+{
+  updateBackgroundColor("#CDBE70;");
+}
+
+void ModuleWidget::setColorSelected()
+{
+  updateBackgroundColor("lightblue;");
+}
+
+void ModuleWidget::setColorUnselected()
+{
+  updateBackgroundColor("lightgray;");
 }
 
 boost::shared_ptr<ModuleDialogFactory> ModuleWidget::dialogFactory_;
@@ -424,4 +414,9 @@ void ModuleWidget::updateNote(const Note& note)
 void ModuleWidget::duplicate()
 {
   Q_EMIT duplicateModule(theModule_);
+}
+
+void ModuleWidget::connectNewModule(const SCIRun::Dataflow::Networks::PortDescriptionInterface* portToConnect, const std::string& newModuleName)
+{
+  Q_EMIT connectNewModule(theModule_, portToConnect, newModuleName);
 }

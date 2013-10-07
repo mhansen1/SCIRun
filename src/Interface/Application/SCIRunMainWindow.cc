@@ -30,19 +30,22 @@
 #include <algorithm>
 #include <functional>
 #include <boost/bind.hpp>
+#include <boost/assign.hpp>
+#include <boost/assign/std/vector.hpp>
+#include <Core/Utils/Legacy/MemoryUtil.h>
 #include <Interface/Application/GuiLogger.h>
 #include <Interface/Application/SCIRunMainWindow.h>
 #include <Interface/Application/NetworkEditor.h>
 #include <Interface/Application/ProvenanceWindow.h>
 #include <Interface/Application/DeveloperConsole.h>
 #include <Interface/Application/Connection.h>
-#include <Interface/Application/Preferences.h>
+#include <Interface/Application/PreferencesWindow.h>
 #include <Interface/Application/PythonConsoleWidget.h>
 #include <Interface/Application/TreeViewCollaborators.h>
 #include <Interface/Application/MainWindowCollaborators.h>
 #include <Interface/Application/GuiCommandFactory.h>
 #include <Interface/Application/GuiCommands.h>
-#include <Core/Logging/Logger.h>
+#include <Core/Logging/LoggerInterface.h>
 #include <Interface/Application/NetworkEditorControllerGuiProxy.h>
 #include <Interface/Application/NetworkExecutionProgressBar.h>
 #include <Dataflow/Network/NetworkFwd.h>
@@ -132,22 +135,24 @@ SCIRunMainWindow::SCIRunMainWindow() : firstTimePythonShown_(true)
   sep->setSeparator(true);
   scrollAreaWidgetContents_->addAction(sep);
 	scrollAreaWidgetContents_->addActions(networkEditor_->getModuleSpecificActions());
-  scrollAreaWidgetContents_->setContextMenuPolicy(Qt::ActionsContextMenu);
+
+  //TODO???????
+  setContextMenuPolicy(Qt::NoContextMenu);
+  //scrollAreaWidgetContents_->setContextMenuPolicy(Qt::ActionsContextMenu);
 
 	scrollArea_->viewport()->setBackgroundRole(QPalette::Dark);
 	scrollArea_->viewport()->setAutoFillBackground(true);	
 
 	logTextBrowser_->setText("Hello! Welcome to the SCIRun5 Prototype.");
 
-  GrabNameAndSetFlags visitor;
-  visitTree(moduleSelectorTreeWidget_, visitor);
-  //std::for_each(visitor.nameList_.begin(), visitor.nameList_.end(), boost::bind(&GuiLogger::log, boost::ref(GuiLogger::Instance()), _1));
+ 
 
   connect(actionSave_As_, SIGNAL(triggered()), this, SLOT(saveNetworkAs()));
   connect(actionSave_, SIGNAL(triggered()), this, SLOT(saveNetwork()));
   connect(actionLoad_, SIGNAL(triggered()), this, SLOT(loadNetwork()));
   connect(actionQuit_, SIGNAL(triggered()), this, SLOT(close()));
   connect(actionRunScript_, SIGNAL(triggered()), this, SLOT(runScript()));
+  connect(actionSelectAll_, SIGNAL(triggered()), networkEditor_, SLOT(selectAll()));
   actionQuit_->setShortcut(QKeySequence::Quit);
 
 #ifndef BUILD_WITH_PYTHON
@@ -159,6 +164,9 @@ SCIRunMainWindow::SCIRunMainWindow() : firstTimePythonShown_(true)
   connect(euclideanPipesRadioButton_, SIGNAL(clicked()), this, SLOT(makePipesEuclidean()));
   //TODO: will be a user or network setting
   makePipesEuclidean();
+
+  connect(largeModuleSizeRadioButton_, SIGNAL(clicked()), this, SLOT(makeModulesLargeSize()));
+  connect(smallModuleSizeRadioButton_, SIGNAL(clicked()), this, SLOT(makeModulesSmallSize()));
   
   for (int i = 0; i < MaxRecentFiles; ++i) 
   {
@@ -173,10 +181,6 @@ SCIRunMainWindow::SCIRunMainWindow() : firstTimePythonShown_(true)
 
   setCurrentFile("");
 
-  moduleSelectorTreeWidget_->expandAll();
-  moduleSelectorTreeWidget_->resizeColumnToContents(0);
-  moduleSelectorTreeWidget_->resizeColumnToContents(1);
-  connect(moduleSelectorTreeWidget_, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(filterDoubleClickedModuleSelectorItem(QTreeWidgetItem*)));
   connect(this, SIGNAL(moduleItemDoubleClicked()), networkEditor_, SLOT(addModuleViaDoubleClickedTreeItem()));
   connect(moduleFilterLineEdit_, SIGNAL(textChanged(const QString&)), this, SLOT(filterModuleNamesInTreeView(const QString&)));
   
@@ -192,17 +196,23 @@ SCIRunMainWindow::SCIRunMainWindow() : firstTimePythonShown_(true)
   connect(networkEditor_, SIGNAL(sceneChanged(const QList<QRectF>&)), this, SLOT(updateMiniView()));
   connect(networkEditor_->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateMiniView()));
   connect(networkEditor_->horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateMiniView()));
+
+  setupInputWidgets();
 }
 
 void SCIRunMainWindow::initialize()
 {
   postConstructionSignalHookup();
-
+    
+  fillModuleSelector();
+  
   executeCommandLineRequests();
 }
 
 void SCIRunMainWindow::postConstructionSignalHookup()
 {
+  connect(moduleSelectorTreeWidget_, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(filterDoubleClickedModuleSelectorItem(QTreeWidgetItem*)));
+
   connect(networkEditor_->getNetworkEditorController().get(), SIGNAL(executionStarted()), this, SLOT(disableInputWidgets()));
   connect(networkEditor_->getNetworkEditorController().get(), SIGNAL(executionFinished(int)), this, SLOT(enableInputWidgets()));
 
@@ -222,6 +232,23 @@ void SCIRunMainWindow::postConstructionSignalHookup()
   connect(provenanceWindow_, SIGNAL(modifyingNetwork(bool)), commandConverter_.get(), SLOT(networkBeingModifiedByProvenanceManager(bool)));
 
   prefs_->setRegressionTestDataDir();
+}
+
+void SCIRunMainWindow::setupInputWidgets()
+{
+  using namespace boost::assign;
+  inputWidgets_ += actionExecute_All_,
+    actionSave_,
+    actionLoad_,
+    actionSave_As_,
+    actionNew_,
+    moduleSelectorTreeWidget_,
+    actionRunScript_;
+  std::copy(recentFileActions_.begin(), recentFileActions_.end(), std::back_inserter(inputWidgets_));
+
+#ifdef BUILD_WITH_PYTHON
+  inputWidgets_ += pythonConsole_;
+#endif
 }
 
 SCIRunMainWindow* SCIRunMainWindow::instance_ = 0;
@@ -251,7 +278,7 @@ void SCIRunMainWindow::setupNetworkEditor()
   defaultNotePositionGetter_.reset(new ComboBoxDefaultNotePositionGetter(*defaultNotePositionComboBox_));
   networkEditor_ = new NetworkEditor(getter, defaultNotePositionGetter_, scrollAreaWidgetContents_);
   networkEditor_->setObjectName(QString::fromUtf8("networkEditor_"));
-  networkEditor_->setContextMenuPolicy(Qt::ActionsContextMenu);
+  //networkEditor_->setContextMenuPolicy(Qt::ActionsContextMenu);
   networkEditor_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   networkEditor_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   networkEditor_->verticalScrollBar()->setValue(0);
@@ -342,6 +369,7 @@ bool SCIRunMainWindow::newNetwork()
   if (okToContinue())
   {
     networkEditor_->clear();
+    provenanceWindow_->clear();
     setCurrentFile("");
     return true;
   }
@@ -435,6 +463,7 @@ bool SCIRunMainWindow::okToContinue()
   return true;
 }
 
+//TODO: hook up to modules' state_changed_sig_t via GlobalStateManager
 void SCIRunMainWindow::networkModified()
 {
   setWindowModified(true);
@@ -551,6 +580,14 @@ void SCIRunMainWindow::readSettings()
       break;
     }
   }
+
+  const QString disableModuleErrorDialogsKey = "disableModuleErrorDialogs";
+  if (settings.contains(disableModuleErrorDialogsKey))
+  {
+    bool disableModuleErrorDialogs = settings.value(disableModuleErrorDialogsKey).toBool();
+    GuiLogger::Instance().log(QString("Setting read: disable module error dialogs = ") + disableModuleErrorDialogs );
+    prefs_->setDisableModuleErrorDialogs(disableModuleErrorDialogs);
+  }
 }
 
 void SCIRunMainWindow::writeSettings()
@@ -565,44 +602,37 @@ void SCIRunMainWindow::writeSettings()
   settings.setValue("connectionPipeType", networkEditor_->connectionPipelineType());
 }
 
+namespace
+{
+  template <bool Flag>
+  class SetDisableFlag : public boost::static_visitor<>
+  {
+  public:
+    template <typename T>
+    void operator()( T* widget ) const
+    {
+      widget->setDisabled(Flag);
+    }
+  };
+
+  //TODO: VS2010 compiler can't handle this function; check 2012 and clang
+  template <bool Flag>
+  void setWidgetsDisableFlag(std::vector<SCIRunMainWindow::InputWidget>& widgets)
+  {
+    std::for_each(widgets.begin(), widgets.end(), [](SCIRunMainWindow::InputWidget& v) { boost::apply_visitor(SetDisableFlag<Flag>(), v); });
+  }
+}
+
 void SCIRunMainWindow::disableInputWidgets()
 {
-  actionExecute_All_->setDisabled(true);
-  actionSave_->setDisabled(true);
-  actionLoad_->setDisabled(true);
-  actionSave_As_->setDisabled(true);
-  actionNew_->setDisabled(true);
-  moduleSelectorTreeWidget_->setDisabled(true);
-  actionRunScript_->setDisabled(true);
   networkEditor_->disableInputWidgets();
-  scrollAreaWidgetContents_->setContextMenuPolicy(Qt::NoContextMenu);
-  
-  Q_FOREACH(QAction* action, recentNetworksMenu_->actions())
-    action->setDisabled(true);
-
-#ifdef BUILD_WITH_PYTHON
-  pythonConsole_->setDisabled(true);
-#endif
+  std::for_each(inputWidgets_.begin(), inputWidgets_.end(), [](InputWidget& v) { boost::apply_visitor(SetDisableFlag<true>(), v); });
 }
 
 void SCIRunMainWindow::enableInputWidgets()
 {
-  actionExecute_All_->setEnabled(true);
-  actionSave_->setEnabled(true);
-  actionLoad_->setEnabled(true);
-  actionSave_As_->setEnabled(true);
-  actionNew_->setEnabled(true);
-  moduleSelectorTreeWidget_->setEnabled(true);
-  actionRunScript_->setEnabled(true);
   networkEditor_->enableInputWidgets();
-  scrollAreaWidgetContents_->setContextMenuPolicy(Qt::ActionsContextMenu);
-
-  Q_FOREACH(QAction* action, recentNetworksMenu_->actions())
-    action->setEnabled(true);
-
-#ifdef BUILD_WITH_PYTHON
-  pythonConsole_->setDisabled(false);
-#endif
+  std::for_each(inputWidgets_.begin(), inputWidgets_.end(), [](InputWidget& v) { boost::apply_visitor(SetDisableFlag<false>(), v); });
 }
 
 void SCIRunMainWindow::chooseBackgroundColor()
@@ -740,4 +770,60 @@ void SCIRunMainWindow::showPythonWarning(bool visible)
     QMessageBox::warning(this, "Warning: Known Python interface issue", 
       "Attention Python interface user: this feature is not fully implemented. The main issue is that changes made to the current network from the GUI, such as adding/removing modules, are not reflected in the Python console's state. Thus strange bugs can be created by switching between Python-edit mode and standard-GUI-edit mode. Please use the Python console to test your commands, then compose a script that you can run separately without needing the GUI. This issue will be resolved in the next milestone. Thank you!");
   }
+}
+
+void SCIRunMainWindow::makeModulesLargeSize()
+{
+  std::cout << "Modules are large" << std::endl;
+}
+
+void SCIRunMainWindow::makeModulesSmallSize()
+{
+  std::cout << "TODO: Modules are small" << std::endl;
+}
+
+namespace {
+
+void fillTreeWidget(QTreeWidget* tree, const ModuleDescriptionMap& moduleMap)
+{
+  BOOST_FOREACH(const ModuleDescriptionMap::value_type& package, moduleMap)
+  {
+    const std::string& packageName = package.first;
+    auto p = new QTreeWidgetItem();
+    p->setText(0, QString::fromStdString(packageName));
+    tree->addTopLevelItem(p);
+    BOOST_FOREACH(const ModuleDescriptionMap::value_type::second_type::value_type& category, package.second)
+    {
+      const std::string& categoryName = category.first;
+      auto c = new QTreeWidgetItem();
+      c->setText(0, QString::fromStdString(categoryName));
+      p->addChild(c);
+      BOOST_FOREACH(const ModuleDescriptionMap::value_type::second_type::value_type::second_type::value_type& module, category.second)
+      {
+        const std::string& moduleName = module.first;
+        auto m = new QTreeWidgetItem();
+        m->setText(0, QString::fromStdString(moduleName));
+        m->setText(1, QString::fromStdString(module.second.moduleStatus_));
+        m->setText(2, QString::fromStdString(module.second.moduleInfo_));
+        c->addChild(m);
+      }
+    }
+  }
+}
+}
+
+void SCIRunMainWindow::fillModuleSelector()
+{
+  moduleSelectorTreeWidget_->clear();
+
+  auto moduleDescs = networkEditor_->getNetworkEditorController()->getAllAvailableModuleDescriptions();
+  fillTreeWidget(moduleSelectorTreeWidget_, moduleDescs);
+
+  GrabNameAndSetFlags visitor;
+  visitTree(moduleSelectorTreeWidget_, visitor);
+  //std::for_each(visitor.nameList_.begin(), visitor.nameList_.end(), boost::bind(&GuiLogger::log, boost::ref(GuiLogger::Instance()), _1));
+
+  moduleSelectorTreeWidget_->expandAll();
+  moduleSelectorTreeWidget_->resizeColumnToContents(0);
+  moduleSelectorTreeWidget_->resizeColumnToContents(1);
 }

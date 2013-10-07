@@ -32,7 +32,7 @@
 #include <boost/python.hpp>
 #include <Dataflow/Engine/Python/NetworkEditorPythonInterface.h>
 #include <Dataflow/Engine/Python/NetworkEditorPythonAPI.h>
-#include <Dataflow/Engine/Python/Share.h>
+#include <Dataflow/Engine/Python/share.h>
 
 BOOST_PYTHON_MODULE(SCIRunPythonAPI)
 {
@@ -43,6 +43,7 @@ BOOST_PYTHON_MODULE(SCIRunPythonAPI)
     .add_property("type", &PyPort::type)
     .add_property("isInput", &PyPort::isInput)
     .def(boost::python::self >> boost::python::self)
+    .def("connect", &PyPort::connect)
     ;
 
   boost::python::class_<PyPorts, boost::shared_ptr<PyPorts>, boost::noncopyable>("SCIRun::PyPorts", boost::python::no_init)

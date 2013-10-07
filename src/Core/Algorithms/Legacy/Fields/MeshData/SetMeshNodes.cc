@@ -26,31 +26,35 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include <Core/Datatypes/FieldInformation.h>
-#include <Core/Algorithms/Fields/MeshData/SetMeshNodes.h>
-#include <Core/Algorithms/Fields/ConvertMeshType/ConvertMeshToIrregularMesh.h>
-
-
-namespace SCIRunAlgo {
+#include <Core/Datatypes/Legacy/Field/FieldInformation.h>
+#include <Core/Algorithms/Legacy/Fields/MeshData/SetMeshNodes.h>
+#include <Core/Algorithms/Legacy/Fields/ConvertMeshType/ConvertMeshToIrregularMesh.h>
+#include <Core/Datatypes/Legacy/Field/VMesh.h>
+#include <Core/Algorithms/Base/AlgorithmPreconditions.h>
+#include <Core/Datatypes/DenseMatrix.h>
+#include <Core/Datatypes/PropertyManagerExtensions.h>
 
 using namespace SCIRun;
+using namespace SCIRun::Core::Algorithms::Fields;
+using namespace SCIRun::Core::Geometry;
+using namespace SCIRun::Core::Utility;
+using namespace SCIRun::Core::Algorithms;
+using namespace SCIRun::Core::Datatypes;
 
 bool 
-SetMeshNodesAlgo::
-run(FieldHandle& input, MatrixHandle& matrix, FieldHandle& output)
-				      
+SetMeshNodesAlgo::run(FieldHandle input, DenseMatrixHandle matrix, FieldHandle& output) const
 {
-  algo_start("SetMeshNodes");
+  ScopedAlgorithmStatusReporter asr(this, "SetMeshNodes");
 
-  if (input.get_rep() == 0)
+  if (!input)
   {
-    algo_end(); error("No input source field");
+    error("No input source field");
     return (false);
   }
   
-  if (matrix.get_rep() == 0)
+  if (!matrix)
   {
-    algo_end(); error("No input source matrix");
+    error("No input source matrix");
     return (false);
   }
 
@@ -60,44 +64,59 @@ run(FieldHandle& input, MatrixHandle& matrix, FieldHandle& output)
   if (!(matrix->nrows() == numnodes) ||
       !(matrix->ncols() == 3))
   {
-    algo_end(); error("Matrix dimensions do not match any of the fields dimensions");
+    error("Matrix dimensions do not match any of the fields dimensions");
     return (false);
   }
 
   FieldInformation fi(input);
   if (fi.is_regularmesh())
   {
-    SCIRunAlgo::ConvertMeshToIrregularMeshAlgo algo;
-    algo.set_progress_reporter(get_progress_reporter());
-    if(!(algo.run(input,output))) return (false);
+    //TODO: worth separating out into factory call for mocking purposes? probably not, just keep the concrete dependence
+    ConvertMeshToIrregularMeshAlgo algo;
+    algo.setUpdaterFunc(getUpdaterFunc());
+
+    if (!algo.run(input,output))
+      return (false);
   }
   else
   {
-    output = input->clone();
-    output->mesh_detach();
+    output.reset(input->deep_clone());
   }
-  output->copy_properties(input.get_rep());
+
+  CopyProperties(*input, *output);
 
   VMesh* mesh = output->vmesh();
   VMesh::size_type size = mesh->num_nodes();
   
-  double* dataptr = matrix->get_data_pointer();
-
   Point p;
-  index_type k = 0;
   int cnt =0;
   for (VMesh::Node::index_type i=0; i<size; ++i)
   {
-    p.x( dataptr[k  ]);
-    p.y( dataptr[k+1]);
-    p.z( dataptr[k+2]);
-    k += 3;
+    p.x( (*matrix)(i, 0) );
+    p.y( (*matrix)(i, 1) );
+    p.z( (*matrix)(i, 2) );
 
     mesh->set_point(p,i);
-    cnt++; if (cnt == 400) {cnt=0; update_progress(i,size); }
+    cnt++; if (cnt == 400) {cnt=0; update_progress_max(i,size); }
   }
 
-  algo_end(); return (true);
+  return (true);
 }
 
-} // namespace SCIRunAlgo
+AlgorithmInputName SetMeshNodesAlgo::InputField("InputField");
+AlgorithmInputName SetMeshNodesAlgo::MatrixNodes("MatrixNodes");
+AlgorithmOutputName SetMeshNodesAlgo::OutputField("OutputField");
+
+AlgorithmOutput SetMeshNodesAlgo::run_generic(const AlgorithmInput& input) const
+{
+  auto inputField = input.get<Field>(InputField);
+  auto nodes = input.get<DenseMatrix>(MatrixNodes);
+
+  FieldHandle outputField;
+  if (!run(inputField, nodes, outputField))
+    THROW_ALGORITHM_PROCESSING_ERROR("False returned on legacy run call.");
+
+  AlgorithmOutput output;
+  output[OutputField] = outputField;
+  return output;
+}

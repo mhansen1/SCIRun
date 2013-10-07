@@ -30,18 +30,20 @@
 #define MODULES_DATAIO_WRITE_MATRIX_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/DataIO/Share.h>
+#include <Modules/DataIO/share.h>
 
 namespace SCIRun {
   namespace Modules {
     namespace DataIO {
 
       class SCISHARE WriteMatrixModule : public SCIRun::Dataflow::Networks::Module,
-        public Has2InputPorts<MatrixPortTag, StringPortTag>
+        public Has2InputPorts<MatrixPortTag, StringPortTag>,
+        public HasNoOutputPorts
       {
       public:
         WriteMatrixModule();
         virtual void execute();
+        virtual void setStateDefaults() {}
         INPUT_PORT(0, MatrixToWrite, Matrix);
         INPUT_PORT(1, Filename, String);
       private:

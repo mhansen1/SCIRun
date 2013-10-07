@@ -30,7 +30,7 @@
 #define MODULES_VISUALIZATION_MATRIX_AS_VECTOR_FIELD_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Visualization/Share.h>
+#include <Modules/Visualization/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -43,6 +43,7 @@ namespace Visualization {
   public:
     MatrixAsVectorFieldModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
     INPUT_PORT(0, Matrix, DenseMatrix);
     OUTPUT_PORT(0, RenderedMatrix, GeometryObject);
   };

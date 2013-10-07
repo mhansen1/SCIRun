@@ -91,6 +91,11 @@ IF (WIN32)
   #SET_TARGET_PROPERTIES(${SCI_LOG4CPP_LIBRARY} PROPERTIES LINK_FLAGS /NODEFAULTLIB:msvcrt )
 ENDIF (WIN32)
 
+# This works because log4cpp is part of the SCIRun git repository.
+# If this project gets moved to a CMake external project, this directive will have to be revised.
+ADD_DEPENDENCIES(${SCI_LOG4CPP_LIBRARY} Boost_external)
+
+
 #INSTALL (
 #  DIRECTORY include/log4cpp
 #  DESTINATION include
@@ -101,6 +106,6 @@ ENDIF (WIN32)
 #  )
 
 #INSTALL (
-#  TARGETS ${LOG4CPP_LIBRARY_NAME}
+#  TARGETS ${SCI_LOG4CPP_LIBRARY}
 #  ARCHIVE DESTINATION lib
 #  )

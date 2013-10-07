@@ -30,18 +30,20 @@
 #define MODULES_MATH_REPORTMATRIXINFO_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Math/Share.h>
+#include <Modules/Math/share.h>
 
 namespace SCIRun {
 namespace Modules {
 namespace Math {
   
   class SCISHARE ReportMatrixInfoModule : public SCIRun::Dataflow::Networks::Module,
-    public Has1InputPort<MatrixPortTag>
+    public Has1InputPort<MatrixPortTag>,
+    public HasNoOutputPorts
   {
   public:
     ReportMatrixInfoModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
     INPUT_PORT(0, Input, Matrix);
   };
 }}}

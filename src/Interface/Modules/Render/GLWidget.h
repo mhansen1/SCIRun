@@ -43,8 +43,7 @@
 #include "GLContext.h"
 #include "QtGLContext.h"
 #include "Spire/Interface.h"
-#include "Spire/StuPipe/StuInterface.h"
-#include "Spire/AppSpecific/SCIRun/SRInterface.h"
+#include "SpireExt/SCIRun/SRInterface.h"
 
 namespace SCIRun {
 namespace Gui {
@@ -61,6 +60,10 @@ public:
 
   std::shared_ptr<Spire::SCIRun::SRInterface> getSpire() const {return mGraphics;}
 
+  /// Required function for single threaded interfaces that have multiple
+  /// contexts running on the same thread.
+  void makeCurrent();
+
 protected:
   virtual void mousePressEvent(QMouseEvent* event);
   virtual void mouseMoveEvent(QMouseEvent* event);
@@ -68,6 +71,7 @@ protected:
   virtual void wheelEvent(QWheelEvent* event);
   virtual void initializeGL();
   virtual void resizeGL(int width, int height);
+  void closeEvent(QCloseEvent *evt);
 
 public Q_SLOTS:
   // Only use when not using threading.

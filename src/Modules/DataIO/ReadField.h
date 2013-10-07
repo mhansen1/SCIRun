@@ -32,7 +32,7 @@
 #include <Core/Datatypes/Mesh/FieldFwd.h>
 #include <Core/Algorithms/Base/AlgorithmBase.h>
 #include <Modules/DataIO/GenericReader.h>
-#include <Modules/DataIO/Share.h>
+#include <Modules/DataIO/share.h>
 
 namespace SCIRun {
 namespace Modules {
@@ -44,6 +44,7 @@ namespace DataIO {
     typedef GenericReader<FieldHandle, FieldPortTag> my_base;
     ReadFieldModule();
     virtual void execute();
+    virtual void setStateDefaults() {}
 
     OUTPUT_PORT(0, Field, LegacyField);
 

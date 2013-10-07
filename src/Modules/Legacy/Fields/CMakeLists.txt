@@ -30,6 +30,13 @@
 
 SET(Dataflow_Modules_Legacy_Fields_HEADERS
   CreateLatVol.h
+  GetFieldBoundary.h
+  CalculateGradients.h
+  CalculateSignedDistanceToField.h
+  ConvertQuadSurfToTriSurf.h
+  AlignMeshBoundingBoxes.h
+  SetFieldNodes.h
+  GetFieldNodes.h
 )
 
 SET(Dataflow_Modules_Legacy_Fields_SRCS
@@ -49,7 +56,7 @@ SET(Dataflow_Modules_Legacy_Fields_SRCS
   #CleanupTetMesh.cc
   #MatchDomainLabels.cc
   #SplitFieldByDomain.cc
-  #AlignMeshBoundingBoxes.cc
+  AlignMeshBoundingBoxes.cc
   #ProjectPointsOntoMesh.cc
   #GetMeshQualityField.cc
   #ApplyFilterToFieldData.cc
@@ -79,14 +86,14 @@ SET(Dataflow_Modules_Legacy_Fields_SRCS
   #RemoveHexVolSheet.cc
   #FairMesh.cc
   #GetAllSegmentationBoundaries.cc
-  #GetFieldBoundary.cc
+  GetFieldBoundary.cc
   #ReportFieldInfo.cc
   #ReportFieldGeometryMeasures.cc
   #SetFieldProperty.cc
   #GetSliceFromStructuredFieldByIndices.cc
   #SubsampleStructuredFieldByIndices.cc
   #JoinFields.cc
-  #CalculateGradients.cc
+  CalculateGradients.cc
   #ConvertHexVolToTetVol.cc
   #MergeFields.cc
   #InsertHexVolSheetAlongSurface.cc
@@ -98,7 +105,7 @@ SET(Dataflow_Modules_Legacy_Fields_SRCS
   #ConvertLatVolDataFromElemToNode.cc
   #ConvertLatVolDataFromNodeToElem.cc
   #CalculateLatVolGradientsAtNodes.cc
-  #ConvertQuadSurfToTriSurf.cc
+  ConvertQuadSurfToTriSurf.cc
   #TransformPlanarMesh.cc
   #BuildPointCloudToLatVolMappingMatrix.cc
   #GenerateSinglePointProbeFromField.cc
@@ -126,15 +133,15 @@ SET(Dataflow_Modules_Legacy_Fields_SRCS
   #GenerateLinearSegments.cc
   #CalculateDistanceToField.cc
   #CalculateDistanceToFieldBoundary.cc
-  #CalculateSignedDistanceToField.cc
+  CalculateSignedDistanceToField.cc
   #CalculateIsInsideField.cc
   #CalculateInsideWhichField.cc
   #ConvertIndicesToFieldData.cc
   #CreateFieldData.cc
   #GetFieldData.cc
   #SetFieldData.cc
-  #GetFieldNodes.cc
-  #SetFieldNodes.cc
+  GetFieldNodes.cc
+  SetFieldNodes.cc
   #MapFieldDataFromElemToNode.cc
   #MapFieldDataFromNodeToElem.cc
   #MapFieldDataOntoNodesRadialbasis.cc

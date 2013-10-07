@@ -30,37 +30,31 @@
 #ifndef CORE_ALGORITHMS_FIELDS_TRANSFORMMESH_ALIGNMESHBOUNDINGBOXES_H
 #define CORE_ALGORITHMS_FIELDS_TRANSFORMMESH_ALIGNMESHBOUNDINGBOXES_H 1
 
-//! Datatypes that the algorithm uses
-#include <Core/Datatypes/Mesh.h>
-#include <Core/Datatypes/Field.h>
-#include <Core/Datatypes/Matrix.h>
+#include <Core/Algorithms/Base/AlgorithmBase.h>
+#include <Core/Algorithms/Legacy/Fields/share.h>
 
+namespace SCIRun {
+  namespace Core {
+    namespace Algorithms {
+      namespace Fields {
 
-//! Base class for algorithm
-#include <Core/Algorithms/Util/AlgoBase.h>
-
-//! for Windows support
-#include <Core/Algorithms/Fields/share.h>
-
-namespace SCIRunAlgo {
-
-using namespace SCIRun;
-
-class SCISHARE AlignMeshBoundingBoxesAlgo : public AlgoBase
+class SCISHARE AlignMeshBoundingBoxesAlgo : public AlgorithmBase
 {
   public:
-    //! Set defaults
-    AlignMeshBoundingBoxesAlgo()
-    {
-      add_bool("rotate_data",true);
-    }
+    AlignMeshBoundingBoxesAlgo();
 
-    //! run the algorithm
-    bool run(FieldHandle input, FieldHandle object, 
-             FieldHandle& output, MatrixHandle& transform);
+    bool run(FieldHandle input, FieldHandle object, FieldHandle& output, Datatypes::MatrixHandle& transform) const;
+
+    static AlgorithmParameterName RotateData;
+    static AlgorithmInputName InputField;
+    static AlgorithmInputName AlignmentField;
+    static AlgorithmOutputName OutputField;
+    static AlgorithmOutputName TransformMatrix;
+
+    virtual AlgorithmOutput run_generic(const AlgorithmInput& input) const;
 };
 
-} // end namespace SCIRunAlgo
+}}}}
 
 #endif 
 

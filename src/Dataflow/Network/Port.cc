@@ -40,7 +40,7 @@ using namespace SCIRun::Dataflow::Networks;
 using namespace SCIRun::Core::Datatypes;
 
 Port::Port(ModuleInterface* module, const ConstructionParams& params)
-  : module_(module), typeName_(params.type_name), portName_(params.port_name), colorName_(params.color_name)
+  : module_(module), typeName_(params.type_name), portName_(params.port_name), colorName_(PortColorLookup::toColor(params.type_name))
 {
   ENSURE_NOT_NULL(module_, "port cannot have null module");
   if (typeName_.empty() || portName_.empty() || colorName_.empty())
@@ -136,5 +136,8 @@ void OutputPort::sendData(DatatypeHandle data)
   if (0 == nconnections())
     return;
   BOOST_FOREACH(Connection* c, connections_)
-    source_->send(c->iport_->sink(), data);
+  {
+    if (c && c->iport_)
+      source_->send(c->iport_->sink(), data);
+  }
 }

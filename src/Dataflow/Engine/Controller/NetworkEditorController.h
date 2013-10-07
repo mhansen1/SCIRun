@@ -30,10 +30,11 @@
 #define ENGINE_NETWORK_NETWORKEDITORCONTROLLER_H
 
 #include <Dataflow/Network/NetworkFwd.h>
+#include <Core/Algorithms/Base/AlgorithmFwd.h>
 #include <Dataflow/Engine/Scheduler/SchedulerInterfaces.h>
 #include <Dataflow/Engine/Controller/ControllerInterfaces.h>
 #include <Dataflow/Engine/Scheduler/ExecutionStrategy.h>
-#include <Dataflow/Engine/Controller/Share.h>
+#include <Dataflow/Engine/Controller/share.h>
 
 namespace SCIRun {
 namespace Dataflow {
@@ -52,14 +53,21 @@ namespace Engine {
   class SCISHARE NetworkEditorController : public NetworkIOInterface<Networks::NetworkFileHandle>
   {
   public:
-    explicit NetworkEditorController(Networks::ModuleFactoryHandle mf, Networks::ModuleStateFactoryHandle sf, ExecutionStrategyFactoryHandle executorFactory, Networks::ModulePositionEditor* mpg = 0);
+    explicit NetworkEditorController(Networks::ModuleFactoryHandle mf, 
+      Networks::ModuleStateFactoryHandle sf, 
+      ExecutionStrategyFactoryHandle executorFactory, 
+      Core::Algorithms::AlgorithmFactoryHandle algoFactory,
+      Networks::ModulePositionEditor* mpg = 0);
     explicit NetworkEditorController(Networks::NetworkHandle network, ExecutionStrategyFactoryHandle executorFactory, Networks::ModulePositionEditor* mpg = 0);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////Start: To be Pythonized/////////////////////////////
     Networks::ModuleHandle addModule(const std::string& moduleName);
     void removeModule(const Networks::ModuleId& id);
+    
     Networks::ModuleHandle duplicateModule(const Networks::ModuleHandle& module);
+    void connectNewModule(const SCIRun::Dataflow::Networks::ModuleHandle& moduleToConnectTo, const SCIRun::Dataflow::Networks::PortDescriptionInterface* portToConnect, const std::string& newModuleName);
+
     void requestConnection(const SCIRun::Dataflow::Networks::PortDescriptionInterface* from, const SCIRun::Dataflow::Networks::PortDescriptionInterface* to);
     void removeConnection(const Networks::ConnectionId& id);
 
@@ -89,12 +97,15 @@ namespace Engine {
     //TODO: eek, getting bloated here. Figure out a better way to wire this one in.
     void setModulePositionEditor(Networks::ModulePositionEditor* editor) { modulePositionEditor_ = editor; }
 
+    const Networks::ModuleDescriptionMap& getAllAvailableModuleDescriptions() const;
+
   private:
     void printNetwork() const;
     Networks::ModuleHandle addModuleImpl(const std::string& moduleName);
     Networks::NetworkHandle theNetwork_;
     Networks::ModuleFactoryHandle moduleFactory_;
     Networks::ModuleStateFactoryHandle stateFactory_;
+    Core::Algorithms::AlgorithmFactoryHandle algoFactory_;
     ExecutionStrategyHandle currentExecutor_;
     ExecutionStrategyFactoryHandle executorFactory_;
     Networks::ModulePositionEditor* modulePositionEditor_;
@@ -104,6 +115,8 @@ namespace Engine {
     ConnectionAddedSignalType connectionAdded_;
     ConnectionRemovedSignalType connectionRemoved_;
     InvalidConnectionSignalType invalidConnection_;
+
+    void configureLoggingLibrary();
   };
 
   typedef boost::shared_ptr<NetworkEditorController> NetworkEditorControllerHandle;

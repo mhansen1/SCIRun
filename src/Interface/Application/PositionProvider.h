@@ -41,6 +41,8 @@ class PositionProvider
 public:
   virtual ~PositionProvider() {}
   virtual QPointF currentPosition() const = 0;
+  virtual QPointF mapToScene(const QPointF &point) const = 0;
+  virtual QPointF mapFromScene(const QPointF &point) const = 0;
 };
 
 class NeedsScenePositionProvider
@@ -55,8 +57,10 @@ protected:
 class ProxyWidgetPosition : public PositionProvider
 {
 public:
-  explicit ProxyWidgetPosition(QGraphicsProxyWidget* widget, const QPointF& offset = QPointF()) : widget_(widget), offset_(offset) {}
+  explicit ProxyWidgetPosition(QGraphicsProxyWidget* widget, const QPointF& offset = QPointF());
   virtual QPointF currentPosition() const;
+  virtual QPointF mapToScene(const QPointF &point) const;
+  virtual QPointF mapFromScene(const QPointF &point) const;
 private:
   QGraphicsProxyWidget* widget_;
   QPointF offset_;

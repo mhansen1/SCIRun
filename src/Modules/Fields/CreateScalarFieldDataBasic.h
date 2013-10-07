@@ -30,7 +30,7 @@
 #define MODULES_FIELDS_CREATESCALARFIELDDATABASIC_H
 
 #include <Dataflow/Network/Module.h>
-#include <Modules/Fields/Share.h>
+#include <Modules/Fields/share.h>
 
 namespace SCIRun {
   namespace Modules {
@@ -44,6 +44,7 @@ public:
   CreateScalarFieldDataBasic();
 
   virtual void execute();
+  virtual void setStateDefaults();
 
   INPUT_PORT(0, InputField, LegacyField);
   OUTPUT_PORT(0, OutputFieldWithData, LegacyField);

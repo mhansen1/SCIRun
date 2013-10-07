@@ -27,7 +27,7 @@
 */
 
 #include <Modules/Math/EvaluateLinearAlgebraBinary.h>
-#include <Core/Algorithms/Math/EvaluateLinearAlgebraBinary.h>
+#include <Core/Algorithms/Math/EvaluateLinearAlgebraBinaryAlgo.h>
 #include <Core/Datatypes/DenseMatrix.h>
 
 using namespace SCIRun::Modules::Math;
@@ -38,6 +38,12 @@ using namespace SCIRun::Dataflow::Networks;
 EvaluateLinearAlgebraBinaryModule::EvaluateLinearAlgebraBinaryModule() :
 Module(ModuleLookupInfo("EvaluateLinearAlgebraBinary", "Math", "SCIRun"))
 {
+}
+
+void EvaluateLinearAlgebraBinaryModule::setStateDefaults()
+{
+  auto state = get_state();
+  state->setValue(EvaluateLinearAlgebraBinaryAlgorithm::OperatorName, 0);
 }
 
 void EvaluateLinearAlgebraBinaryModule::execute()

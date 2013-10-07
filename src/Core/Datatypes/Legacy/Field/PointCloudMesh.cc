@@ -26,11 +26,14 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include <Core/Datatypes/PointCloudMesh.h>
-#include <Core/Datatypes/VMeshShared.h>
+#include <Core/Datatypes/Legacy/Field/PointCloudMesh.h>
+#include <Core/Datatypes/Legacy/Field/VMeshShared.h>
 
 //! Only include this class if we included PointCloud Support
 #if (SCIRUN_POINTCLOUD_SUPPORT > 0)
+
+using namespace SCIRun::Core::Basis;
+using namespace SCIRun::Core::Geometry;
 
 namespace SCIRun {
 

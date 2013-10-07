@@ -32,7 +32,7 @@
 #include <Core/Datatypes/Mesh/FieldFwd.h>
 #include <Core/Algorithms/Base/AlgorithmBase.h>
 #include <Modules/DataIO/GenericWriter.h>
-#include <Modules/DataIO/Share.h>
+#include <Modules/DataIO/share.h>
 
 namespace SCIRun {
   namespace Modules {
@@ -44,6 +44,8 @@ namespace SCIRun {
         typedef GenericWriter<FieldHandle, FieldPortTag> my_base;
         WriteFieldModule();
         virtual void execute();
+        virtual void setStateDefaults() {}
+
         INPUT_PORT(0, FieldToWrite, LegacyField);
 
         static Core::Algorithms::AlgorithmParameterName Filename;

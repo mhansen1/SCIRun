@@ -33,6 +33,7 @@ SET(Core_Python_SRCS
 
 SET(Core_Python_HEADERS
   PythonInterpreter.h
+  share.h
 )
 
 ADD_LIBRARY(Core_Python 

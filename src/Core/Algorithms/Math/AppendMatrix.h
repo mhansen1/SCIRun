@@ -31,7 +31,7 @@
 
 #include <Core/Algorithms/Base/AlgorithmBase.h>
 #include <Core/Algorithms/Math/AlgorithmFwd.h>
-#include <Core/Algorithms/Math/Share.h>
+#include <Core/Algorithms/Math/share.h>
 
 namespace SCIRun {
 namespace Core {
@@ -49,6 +49,8 @@ namespace Math {
     typedef SCIRun::Core::Datatypes::DenseMatrixHandle Outputs;
 
     Outputs run(const Inputs& input, const Parameters& params) const;
+
+    AlgorithmOutput run_generic(const AlgorithmInput& input) const;
   };
 
 }}}}

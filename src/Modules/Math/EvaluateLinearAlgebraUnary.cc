@@ -29,7 +29,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <Modules/Math/EvaluateLinearAlgebraUnary.h>
-#include <Core/Algorithms/Math/EvaluateLinearAlgebraUnary.h>
+#include <Core/Algorithms/Math/EvaluateLinearAlgebraUnaryAlgo.h>
 #include <Core/Datatypes/Datatype.h>
 #include <Core/Datatypes/DenseMatrix.h> //TODO: try to remove this--now it's needed to convert pointers, but actually this module shouldn't need the full def of DenseMatrix.
 
@@ -41,7 +41,13 @@ using namespace SCIRun::Dataflow::Networks;
 EvaluateLinearAlgebraUnaryModule::EvaluateLinearAlgebraUnaryModule() :
   Module(ModuleLookupInfo("EvaluateLinearAlgebraUnary", "Math", "SCIRun"))
 {
+}
 
+void EvaluateLinearAlgebraUnaryModule::setStateDefaults()
+{
+  auto state = get_state();
+  state->setValue(EvaluateLinearAlgebraUnaryAlgorithm::OperatorName, 0);
+  state->setValue(EvaluateLinearAlgebraUnaryAlgorithm::ScalarValue, 0);
 }
 
 void EvaluateLinearAlgebraUnaryModule::execute()
@@ -60,3 +66,4 @@ void EvaluateLinearAlgebraUnaryModule::execute()
   DenseMatrixHandle output = algo.run(denseInput, params);  //TODO
   sendOutput(Result, output);
 }
+

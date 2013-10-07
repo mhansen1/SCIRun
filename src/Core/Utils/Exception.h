@@ -33,7 +33,7 @@
 #include <boost/exception/all.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/numeric/interval.hpp>
-#include <Core/Utils/Share.h>
+#include <Core/Utils/share.h>
 
 namespace SCIRun 
 {
@@ -106,6 +106,13 @@ namespace Core
   BOOST_THROW_EXCEPTION(SCIRun::Core::NotImplemented() << SCIRun::Core::NotImplementedInfo( \
     SCIRun::Core::NotImplementedInfo::value_type( \
       std::string(message) )))
+
+  struct SCISHARE AssertionFailed : virtual ExceptionBase {};
+
+#define ASSERTMSG(condition,message) \
+  if(!(condition)){ \
+    BOOST_THROW_EXCEPTION(SCIRun::Core::AssertionFailed() << SCIRun::Core::ErrorMessage(message)); \
+  }
 
 }
 }

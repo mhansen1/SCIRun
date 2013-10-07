@@ -326,7 +326,6 @@ PropertyManager::io(Piostream &stream)
       }
     }
   }
-
   stream.end_class();
   stream.set_backwards_compat_id(bc);
 }

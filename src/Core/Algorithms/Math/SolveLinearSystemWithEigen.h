@@ -33,7 +33,7 @@
 #include <Core/Algorithms/Math/AlgorithmFwd.h>
 //TODO: move
 #include <Eigen/src/Core/util/Constants.h>
-#include <Core/Algorithms/Math/Share.h>
+#include <Core/Algorithms/Math/share.h>
 
 namespace SCIRun {
 namespace Core {
@@ -52,6 +52,8 @@ namespace Math {
     typedef boost::tuple<SCIRun::Core::Datatypes::DenseColumnMatrixHandle, double, int> Outputs;
 
     Outputs run(const Inputs& input, const Parameters& params) const;
+
+    AlgorithmOutput run_generic(const AlgorithmInput& input) const;
   };
 
   typedef boost::error_info<struct tag_eigen_computation, Eigen::ComputationInfo> EigenComputationInfo;

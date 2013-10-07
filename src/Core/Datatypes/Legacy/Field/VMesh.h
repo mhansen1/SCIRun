@@ -329,11 +329,9 @@ public:
   inline size_type num_delems() const
     { DElem::index_type s; size(s); return(static_cast<size_t>(s)); }  
   
-#ifdef SCIRUN4_CODE_TO_BE_ENABLED_LATER
   //! NOTE NOT VALID FOR EACH MESH:
   virtual boost::shared_ptr<SearchGridT<SCIRun::index_type> > get_elem_search_grid();
   virtual boost::shared_ptr<SearchGridT<SCIRun::index_type> > get_node_search_grid();
-#endif
 
   //! test for special case where the mesh is empty
   //! empty meshes may need a special treatment
@@ -955,7 +953,7 @@ public:
     { return(get_volume(idx)); }
     
   //! Scaled inscribed to circumscribed ratio
-  virtual double inscribed_circumscribed_radius_metric(const Elem::index_type idx) const;
+  virtual double inscribed_circumscribed_radius_metric(Elem::index_type idx) const;
   
   
   //! TODO: These should go: we have get_weights and get_derivate_weights

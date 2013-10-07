@@ -34,6 +34,7 @@
 #include <Dataflow/Network/Network.h>
 #include <Dataflow/Network/ModuleDescription.h>
 #include <Dataflow/Network/Module.h>
+#include <Dataflow/Network/ModuleFactory.h>
 #include <Dataflow/Serialization/Network/NetworkXMLSerializer.h>
 #include <Dataflow/Serialization/Network/NetworkDescriptionSerialization.h>
 #ifdef BUILD_WITH_PYTHON
@@ -54,11 +55,13 @@
 using namespace SCIRun;
 using namespace SCIRun::Dataflow::Engine;
 using namespace SCIRun::Dataflow::Networks;
+using namespace SCIRun::Core::Algorithms;
 
-NetworkEditorController::NetworkEditorController(ModuleFactoryHandle mf, ModuleStateFactoryHandle sf, ExecutionStrategyFactoryHandle executorFactory, ModulePositionEditor* mpg) : 
-  theNetwork_(new Network(mf, sf)),
+NetworkEditorController::NetworkEditorController(ModuleFactoryHandle mf, ModuleStateFactoryHandle sf, ExecutionStrategyFactoryHandle executorFactory, AlgorithmFactoryHandle af, ModulePositionEditor* mpg) : 
+  theNetwork_(new Network(mf, sf, af)),
   moduleFactory_(mf), 
   stateFactory_(sf), 
+  algoFactory_(af),
   executorFactory_(executorFactory),
   modulePositionEditor_(mpg)
 {
@@ -68,44 +71,7 @@ NetworkEditorController::NetworkEditorController(ModuleFactoryHandle mf, ModuleS
   NetworkEditorPythonAPI::setImpl(boost::make_shared<PythonImpl>(*this));
 #endif
 
-  std::string pattern("%d{%Y-%m-%d %H:%M:%S.%l} [%p] %m%n");
-
-  log4cpp::Appender *appender1 = new log4cpp::OstreamAppender("console", &std::cout);
-  auto layout1 = new log4cpp::PatternLayout();
-  std::string backupPattern1 = layout1->getConversionPattern();
-  try
-  {
-    layout1->setConversionPattern(pattern);
-  }
-  catch (log4cpp::ConfigureFailure& exception)
-  {
-    // TODO: log?
-    std::cerr << "Caught ConfigureFailure exception: " << exception.what() << std::endl
-              << "Restoring original pattern: (" << backupPattern1 << ")" << std::endl;
-    layout1->setConversionPattern(backupPattern1);
-  }
-  appender1->setLayout(layout1);
-
-  log4cpp::Appender *appender2 = new log4cpp::FileAppender("default", "scirun5.log");
-  auto layout2 = new log4cpp::PatternLayout();
-  std::string backupPattern2 = layout1->getConversionPattern();
-  try
-  {
-    layout2->setConversionPattern(pattern);
-  }
-  catch (log4cpp::ConfigureFailure& exception)
-  {
-    // TODO: log?
-    std::cerr << "Caught ConfigureFailure exception: " << exception.what() << std::endl
-    << "Restoring original pattern: (" << backupPattern2 << ")" << std::endl;
-    layout2->setConversionPattern(backupPattern2);
-  }
-  appender2->setLayout(layout2);
-
-  log4cpp::Category& root = log4cpp::Category::getRoot();
-  //root.setPriority(log4cpp::Priority::WARN);
-  root.addAppender(appender1);
-  root.addAppender(appender2);
+  configureLoggingLibrary();
 }
 
 NetworkEditorController::NetworkEditorController(SCIRun::Dataflow::Networks::NetworkHandle network, ExecutionStrategyFactoryHandle executorFactory, ModulePositionEditor* mpg)
@@ -163,6 +129,36 @@ ModuleHandle NetworkEditorController::duplicateModule(const ModuleHandle& module
   }
   
   return newModule;
+}
+
+void NetworkEditorController::connectNewModule(const SCIRun::Dataflow::Networks::ModuleHandle& moduleToConnectTo, const SCIRun::Dataflow::Networks::PortDescriptionInterface* portToConnect, const std::string& newModuleName)
+{
+  auto newMod = addModule(newModuleName);
+
+  //TODO: see above
+  boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+
+  //TODO duplication
+  if (portToConnect->isInput())
+    for (size_t i = 0; i < newMod->num_output_ports(); ++i)
+    {
+      auto p = newMod->get_output_port(i);
+      if (p->get_typename() == portToConnect->get_typename())
+      {
+        requestConnection(p.get(), portToConnect);
+        return;
+      }
+    }
+  else
+    for (size_t i = 0; i < newMod->num_input_ports(); ++i)
+    {
+      auto p = newMod->get_input_port(i);
+      if (p->get_typename() == portToConnect->get_typename())
+      {
+        requestConnection(p.get(), portToConnect);
+        return;
+      }
+    }
 }
 
 void NetworkEditorController::printNetwork() const
@@ -258,7 +254,7 @@ void NetworkEditorController::loadNetwork(const NetworkFileHandle& xml)
 {
   if (xml)
   {
-    NetworkXMLConverter conv(moduleFactory_, stateFactory_);
+    NetworkXMLConverter conv(moduleFactory_, stateFactory_, algoFactory_);
     theNetwork_ = conv.from_xml_data(xml->network);
     for (size_t i = 0; i < theNetwork_->nmodules(); ++i)
     {
@@ -305,3 +301,49 @@ void NetworkEditorController::setExecutorType(int type)
   currentExecutor_ = executorFactory_->create((ExecutionStrategy::Type)type);
 }
 
+const ModuleDescriptionMap& NetworkEditorController::getAllAvailableModuleDescriptions() const
+{
+  return moduleFactory_->getAllAvailableModuleDescriptions();
+}
+
+void NetworkEditorController::configureLoggingLibrary()
+{
+  std::string pattern("%d{%Y-%m-%d %H:%M:%S.%l} [%p] %m%n");
+
+  log4cpp::Appender *appender1 = new log4cpp::OstreamAppender("console", &std::cout);
+  auto layout1 = new log4cpp::PatternLayout();
+  std::string backupPattern1 = layout1->getConversionPattern();
+  try
+  {
+    layout1->setConversionPattern(pattern);
+  }
+  catch (log4cpp::ConfigureFailure& exception)
+  {
+    // TODO: log?
+    std::cerr << "Caught ConfigureFailure exception: " << exception.what() << std::endl
+      << "Restoring original pattern: (" << backupPattern1 << ")" << std::endl;
+    layout1->setConversionPattern(backupPattern1);
+  }
+  appender1->setLayout(layout1);
+
+  log4cpp::Appender *appender2 = new log4cpp::FileAppender("default", "scirun5.log");
+  auto layout2 = new log4cpp::PatternLayout();
+  std::string backupPattern2 = layout1->getConversionPattern();
+  try
+  {
+    layout2->setConversionPattern(pattern);
+  }
+  catch (log4cpp::ConfigureFailure& exception)
+  {
+    // TODO: log?
+    std::cerr << "Caught ConfigureFailure exception: " << exception.what() << std::endl
+      << "Restoring original pattern: (" << backupPattern2 << ")" << std::endl;
+    layout2->setConversionPattern(backupPattern2);
+  }
+  appender2->setLayout(layout2);
+
+  log4cpp::Category& root = log4cpp::Category::getRoot();
+  //root.setPriority(log4cpp::Priority::DEBUG);
+  root.addAppender(appender1);
+  root.addAppender(appender2);
+}

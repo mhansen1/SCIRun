@@ -31,7 +31,8 @@
 #define DATAFLOW_NETWORK_MODULE_FACTORY_H 
 
 #include <Dataflow/Network/NetworkFwd.h>
-#include <Dataflow/Network/Share.h>
+#include <Core/Algorithms/Base/AlgorithmFwd.h>
+#include <Dataflow/Network/share.h>
 
 namespace SCIRun {
 namespace Dataflow {
@@ -44,8 +45,11 @@ namespace Networks {
     virtual ModuleDescription lookupDescription(const ModuleLookupInfo& info) = 0;
     virtual ModuleHandle create(const ModuleDescription& desc) = 0;
     virtual void setStateFactory(ModuleStateFactoryHandle stateFactory) = 0;
-    virtual void setRenderer(SCIRun::Dataflow::Networks::RendererInterface* renderer) = 0;
+    virtual void setAlgorithmFactory(Core::Algorithms::AlgorithmFactoryHandle algoFactory) = 0;
+    virtual const ModuleDescriptionMap& getAllAvailableModuleDescriptions() const = 0;
   };
+
+  SCISHARE SCIRun::Dataflow::Networks::ModuleHandle CreateModuleFromUniqueName(ModuleFactory& factory, const std::string& moduleName);
 
 }}}
 
