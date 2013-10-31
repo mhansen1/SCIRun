@@ -45,6 +45,7 @@ namespace SCIRun
       Dataflow::Networks::ModuleHandle makeModule(const std::string& name);
 
       void stubPortNWithThisData(Dataflow::Networks::ModuleHandle module, size_t portNum, Core::Datatypes::DatatypeHandle data);
+      Core::Datatypes::DatatypeHandle getDataOnThisOutputPort(Dataflow::Networks::ModuleHandle module, size_t portNum);
       void connectDummyOutputConnection(Dataflow::Networks::ModuleHandle module, size_t portNum);
     private:
       Dataflow::Networks::ModuleFactoryHandle factory_;
@@ -64,5 +65,12 @@ namespace SCIRun
     };
 
     typedef boost::shared_ptr< ::testing::NiceMock<MockAlgorithm> > MockAlgorithmPtr;
+
+    class SCISHARE UseRealAlgorithmFactory
+    {
+    public:
+      UseRealAlgorithmFactory();
+      ~UseRealAlgorithmFactory();
+    };
   }
 }
