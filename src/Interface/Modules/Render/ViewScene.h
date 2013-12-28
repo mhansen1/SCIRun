@@ -33,19 +33,25 @@
 #define NOMINMAX
 
 #include "Interface/Modules/Render/ui_ViewScene.h"
+
 #include <boost/shared_ptr.hpp>
+
 #include <Modules/Basic/SendScalarModuleState.h>
 #include <Interface/Modules/Base/ModuleDialogGeneric.h>
+
+#include <spire/Interface.h>
+#include <Interface/Modules/Render/namespaces.h>
+
+#include <Interface/Modules/Render/SpireSCIRun/SRInterface.h>
+#include <Interface/Modules/Render/SpireSCIRun/SRCommonAttributes.h>
+#include <Interface/Modules/Render/SpireSCIRun/SRCommonUniforms.h>
+
+#include <Interface/Modules/Render/GLWidget.h>
+
 #include <Interface/Modules/Render/share.h>
 
-#include "spire/Interface.h"
-#include "spire_scirun/SRInterface.h"
-#include "spire_scirun/SRCommonAttributes.h"
-#include "spire_scirun/SRCommonUniforms.h"
-#include "namespaces.h"
-#include "GLWidget.h"
-
 //TODO: needs to inherit from ModuleWidget somehow
+class QToolBar;
 
 namespace SCIRun {
 namespace Gui {
@@ -63,12 +69,19 @@ public:
   virtual void pull() {}
 
   virtual void moduleExecuted();
+
+protected Q_SLOTS:
+  void menuMouseControlChanged(int index);
+  void autoViewClicked(bool checked);
+
 protected:
   virtual void closeEvent(QCloseEvent *evt) override;
 private:
   void addToolBar();
-  GLWidget*                              mGLWidget;  ///< GL widget containing context.
-  std::weak_ptr<spire_sr::SRInterface>   mSpire;     ///< Instance of Spire.
+
+  GLWidget*                     mGLWidget;  ///< GL widget containing context.
+  std::weak_ptr<SRInterface>    mSpire;     ///< Instance of Spire.
+  QToolBar*                     mToolBar;   ///< Tool bar.
 
 };
 

@@ -43,7 +43,6 @@ SET(Dataflow_Network_Tests_HEADERS
   MockModuleState.h
   MockPorts.h
   MockNetwork.h
-  SimpleSourceSink.h
 )
 
 SCIRUN_ADD_UNIT_TEST(Dataflow_Network_Tests 
@@ -57,5 +56,6 @@ TARGET_LINK_LIBRARIES(Dataflow_Network_Tests
   gtest_main
   gtest
   gmock
+  gmock_main
 )
 
