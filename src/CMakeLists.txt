@@ -152,24 +152,6 @@ ENDIF()
 
 
 ########################################################################
-# Configure zlib external project
-
-INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/CMake/ZlibConfig.cmake)
-EXTERNAL_ZLIB_LIBRARY(GIT ${CMAKE_CXX_FLAGS} ${DISABLED_UPDATE})
-
-
-########################################################################
-# Configure Python external project and settings
-
-OPTION(BUILD_WITH_PYTHON "Build with python support." OFF)
-
-IF(BUILD_WITH_PYTHON)
-  INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/CMake/PythonConfig.cmake)
-  EXTERNAL_PYTHON_LIBRARY_LIBRARY(GIT ${CMAKE_CXX_FLAGS} ${DISABLED_UPDATE})
-ENDIF(BUILD_WITH_PYTHON)  
-
-
-########################################################################
 # Custom compiler flags and definitions
 
 # TODO: Better compiler check for OS X?
@@ -201,6 +183,16 @@ ENDIF()
 
 # should be installed by default, searching system paths only
 IF(APPLE)
+  FIND_PROGRAM(AWK
+    NAMES awk
+  )
+  MARK_AS_ADVANCED(AWK)
+
+  FIND_PROGRAM(SED
+    NAMES sed
+  )
+  MARK_AS_ADVANCED(SED)
+
   FIND_PROGRAM(MACDEPLOYQT
     NAMES macdeployqt
   )
@@ -252,10 +244,28 @@ ENDIF()
 
 
 ########################################################################
+# Configure zlib external project
+
+INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/CMake/ZlibConfig.cmake)
+EXTERNAL_ZLIB_LIBRARY(GIT)
+
+
+########################################################################
+# Configure Python external project and settings
+
+OPTION(BUILD_WITH_PYTHON "Build with python support." OFF)
+
+IF(BUILD_WITH_PYTHON)
+  INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/CMake/PythonConfig.cmake)
+  EXTERNAL_PYTHON_LIBRARY(GIT)
+ENDIF(BUILD_WITH_PYTHON)  
+
+
+########################################################################
 # Configure Boost external project
 
 INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/CMake/BoostConfig.cmake)
-EXTERNAL_BOOST_LIBRARY(GIT ${CMAKE_CXX_FLAGS} ${DISABLED_UPDATE} ${BUILD_WITH_PYTHON})
+EXTERNAL_BOOST_LIBRARY(GIT)
 
 
 ########################################################################
