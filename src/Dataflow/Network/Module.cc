@@ -447,6 +447,16 @@ void Module::setStateIntFromAlgo(AlgorithmParameterName name)
   get_state()->setValue(name, algo().get(name).getInt());
 }
 
+void Module::setStateDoubleFromAlgo(AlgorithmParameterName name)
+{
+  get_state()->setValue(name, algo().get(name).getDouble());
+}
+
+void Module::setAlgoDoubleFromState(AlgorithmParameterName name)
+{
+  algo().set(name, get_state()->getValue(name).getDouble());
+}
+
 ModuleInterface::ExecutionState Module::executionState() const
 {
   return executionState_;
@@ -467,4 +477,9 @@ bool Module::needToExecute() const
 bool Module::inputsChanged() const
 {
   return inputsChanged_;
+}
+
+void Module::addPortConnection(const boost::signals2::connection& con)
+{
+  portConnections_.emplace_back(new boost::signals2::scoped_connection(con));
 }
