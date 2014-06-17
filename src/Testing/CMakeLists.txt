@@ -44,7 +44,7 @@ IF(RUN_BASIC_REGRESSION_TESTS)
 
    IF(WIN32)
      SET(EXE_LOC ${SCIRun5Prototype_BINARY_DIR}/${BUILD_TYPE}/SCIRunGUIPrototype.exe CACHE PATH "Path to SCIRun executable")
-   ELSE(WIN32)
+   ELSE()
      # TODO: change once testing works with app bundle
      IF(APPLE)
        SET(EXE_LOC ${SCIRun5Prototype_BINARY_DIR}/${TEST_APPLICATION_NAME} CACHE PATH "Path to SCIRun executable")

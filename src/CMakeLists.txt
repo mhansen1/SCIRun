@@ -84,8 +84,8 @@ SET(SCIRUN_VERSION_STRING "${SCIRUN_VERSION_MAJOR}.${SCIRUN_VERSION_MINOR}")
 # Based on Seg3D settings...
 
 SET(APPLICATION_NAME "SCIRunGUIPrototype" CACHE INTERNAL "Application name" FORCE)
-# TODO: temporary hack to allow testing
-SET(TEST_APPLICATION_NAME "SCIRunGUIPrototype_test" CACHE INTERNAL "Application name" FORCE)
+# TODO: needed?
+SET(CONSOLE_APPLICATION_NAME "SCIRunGUIPrototype_console" CACHE INTERNAL "Application name" FORCE)
 # add others?
 SET(APPLICATION_EXTENSION ".net" CACHE INTERNAL "Network file extension" FORCE)
 SET(APPLICATION_URL "www.scirun.org" CACHE INTERNAL "Project URL" FORCE)
@@ -195,15 +195,15 @@ ENDIF()
 
 # should be installed by default, searching system paths only
 IF(APPLE)
-  FIND_PROGRAM(AWK
-    NAMES awk
-  )
-  MARK_AS_ADVANCED(AWK)
-
-  FIND_PROGRAM(SED
-    NAMES sed
-  )
-  MARK_AS_ADVANCED(SED)
+  #FIND_PROGRAM(AWK
+  #  NAMES awk
+  #)
+  #MARK_AS_ADVANCED(AWK)
+#
+  #FIND_PROGRAM(SED
+  #  NAMES sed
+  #)
+  #MARK_AS_ADVANCED(SED)
 
   FIND_PROGRAM(MACDEPLOYQT
     NAMES macdeployqt
@@ -443,7 +443,9 @@ MARK_AS_ADVANCED(CMAKE_LIBRARY_OUTPUT_DIRECTORY CMAKE_RUNTIME_OUTPUT_DIRECTORY)
 SET(BUILD_FROM_TOP_LEVEL 1)
 
 ADD_SUBDIRECTORY(Externals)
-ADD_SUBDIRECTORY(Interface)
+IF(NOT BUILD_HEADLESS)
+  ADD_SUBDIRECTORY(Interface)
+ENDIF()
 ADD_SUBDIRECTORY(Core)
 ADD_SUBDIRECTORY(Dataflow)
 ADD_SUBDIRECTORY(Modules)
@@ -570,19 +572,21 @@ SET_PROPERTY(TARGET Engine_Network         PROPERTY FOLDER "Dataflow/Engine")
 SET_PROPERTY(TARGET Engine_Scheduler         PROPERTY FOLDER "Dataflow/Engine")
 SET_PROPERTY(TARGET Dataflow_State         PROPERTY FOLDER "Dataflow")
 
-SET_PROPERTY(TARGET Interface_Modules_Base   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_DataIO   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Math   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Visualization   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Render   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_FiniteElements   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_BrainStimulator   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Testing   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_String   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Fields   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Bundle   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Modules_Factory   PROPERTY FOLDER "Interface/Modules")
-SET_PROPERTY(TARGET Interface_Application   PROPERTY FOLDER "Interface/Application")
+IF(NOT BUILD_HEADLESS)
+  SET_PROPERTY(TARGET Interface_Modules_Base   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_DataIO   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Math   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Visualization   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Render   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_FiniteElements   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_BrainStimulator   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Testing   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_String   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Fields   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Bundle   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Modules_Factory   PROPERTY FOLDER "Interface/Modules")
+  SET_PROPERTY(TARGET Interface_Application   PROPERTY FOLDER "Interface/Application")
+ENDIF()
 
 SET_PROPERTY(TARGET Modules_Basic   PROPERTY FOLDER "Modules/Basic")
 SET_PROPERTY(TARGET Modules_Math   PROPERTY FOLDER "Modules/Math")

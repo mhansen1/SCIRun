@@ -51,8 +51,9 @@ TARGET_LINK_LIBRARIES(Core_ConsoleApplication
 )
 
 IF(BUILD_WITH_PYTHON)
-TARGET_LINK_LIBRARIES(Core_ConsoleApplication
-  Core_Python)
+  TARGET_LINK_LIBRARIES(Core_ConsoleApplication
+    Core_Python
+  )
 ENDIF()
 
 IF(BUILD_SHARED_LIBS)

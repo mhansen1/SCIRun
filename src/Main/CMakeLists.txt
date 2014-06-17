@@ -36,20 +36,30 @@ ENDIF(BUILD_HEADLESS)
 
 IF(APPLE)
   # TODO: temporary - until testing can be configured with app bundle
-  ADD_EXECUTABLE(${TEST_APPLICATION_NAME}
-    ${SCIRunGUIPrototype_SOURCES}
-  )
-  TARGET_LINK_LIBRARIES(${TEST_APPLICATION_NAME}
-    Interface_Application
-  )
+  #ADD_EXECUTABLE(${CONSOLE_APPLICATION_NAME}
+  #  ${SCIRunGUIPrototype_SOURCES}
+  #)
 
-  LIST(APPEND SCIRunGUIPrototype_SOURCES "${APPLICATION_OSX_ICON_FULL_PATH}")
-  SET_SOURCE_FILES_PROPERTIES(${APPLICATION_OSX_ICON_FULL_PATH}
-                              PROPERTIES
-                              MACOSX_PACKAGE_LOCATION Resources)
-  SET(MACOSX_BUNDLE_ICON_FILE "${APPLICATION_OSX_ICON}" )
+  IF(BUILD_HEADLESS)
+    SET(BUILD_BUNDLE FALSE)
+    ADD_EXECUTABLE(${APPLICATION_NAME}
+      ${SCIRunGUIPrototype_SOURCES}
+    )
+  ELSE()
+    LIST(APPEND SCIRunGUIPrototype_SOURCES "${APPLICATION_OSX_ICON_FULL_PATH}")
+    SET_SOURCE_FILES_PROPERTIES(${APPLICATION_OSX_ICON_FULL_PATH}
+      PROPERTIES
+      MACOSX_PACKAGE_LOCATION Resources)
+      SET(MACOSX_BUNDLE_ICON_FILE "${APPLICATION_OSX_ICON}" )
 
-  ADD_EXECUTABLE(${APPLICATION_NAME} MACOSX_BUNDLE ${SCIRunGUIPrototype_SOURCES})
+    ADD_EXECUTABLE(${APPLICATION_NAME} MACOSX_BUNDLE ${SCIRunGUIPrototype_SOURCES})
+    SET(BUILD_BUNDLE TRUE)
+
+    IF(${MACDEPLOYQT} MATCHES "NOTFOUND")
+      SET(BUILD_BUNDLE FALSE)
+      MESSAGE(WARNING "macdeployqt is required to build the SCIRun app bundle. Please ensure that both are installed and in your path.")
+    ENDIF()
+  ENDIF()
 
 ELSE()
 # TODO: ELSE IF WIN32 with NSIS settings, generic Unix build
@@ -81,18 +91,15 @@ ELSE()
 
 ENDIF()
 
-# TODO: Spire library linked against executable (shouldn't be necessary)?
-TARGET_LINK_LIBRARIES(${APPLICATION_NAME}
-  Interface_Application
-)
-
-IF(APPLE)
-  SET(BUILD_BUNDLE TRUE)
-
-  IF(${AWK} MATCHES "NOTFOUND" OR ${SED} MATCHES "NOTFOUND" OR ${MACDEPLOYQT} MATCHES "NOTFOUND")
-    SET(BUILD_BUNDLE FALSE)
-    MESSAGE(WARNING "Awk, sed and macdeployqt are required to build the SCIRun app bundle. Please ensure that both are installed and in your path.")
-  ENDIF()
+IF(BUILD_HEADLESS)
+  TARGET_LINK_LIBRARIES(${APPLICATION_NAME}
+    Core_Application
+    Core_ConsoleApplication
+ )
+ELSE()
+  TARGET_LINK_LIBRARIES(${APPLICATION_NAME}
+    Interface_Application
+ )
 ENDIF()
 
 IF(APPLE AND BUILD_BUNDLE)
