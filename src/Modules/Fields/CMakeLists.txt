@@ -27,12 +27,14 @@
 #
 
 SET(Modules_Fields_SRCS
+  PrintFieldInfo.cc
   CreateScalarFieldDataBasic.cc
   ReportFieldInfo.cc
   InterfaceWithCleaver.cc
 )
 
 SET(Modules_Fields_HEADERS
+  PrintFieldInfo.h
   InterfaceWithCleaver.h
   CreateScalarFieldDataBasic.h
   ReportFieldInfo.h
