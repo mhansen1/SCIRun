@@ -27,6 +27,7 @@
 #
 
 SET(Modules_Fields_Tests_SRCS
+  PrintFieldInfoTests.cc
   CreateLatVolTests.cc
   CalculateFieldDataTests.cc
   CalculateGradientsTests.cc
