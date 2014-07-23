@@ -28,6 +28,7 @@
 #
 
 SET(Interface_Modules_Fields_FORMS
+  PrintFieldInfoDialog.ui
   CreateLatVol.ui
   GetDomainBoundary.ui
   JoinFields.ui
@@ -49,6 +50,7 @@ SET(Interface_Modules_Fields_FORMS
 )
 
 SET(Interface_Modules_Fields_HEADERS
+  PrintFieldInfoDialog.h
   CreateLatVolDialog.h
   CreateFieldDataDialog.h
   CalculateFieldDataDialog.h
@@ -71,6 +73,7 @@ SET(Interface_Modules_Fields_HEADERS
 )
 
 SET(Interface_Modules_Fields_SOURCES
+  PrintFieldInfoDialog.cc
   CreateLatVolDialog.cc
   CreateFieldDataDialog.cc
   CalculateFieldDataDialog.cc
