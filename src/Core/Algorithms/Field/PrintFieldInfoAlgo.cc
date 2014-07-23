@@ -57,11 +57,11 @@ AlgorithmOutput PrintFieldInfoAlgo::run_generic(const AlgorithmInput& input) con
   double knob2 = get(Parameters::Knob2).getDouble();
   if (get(Parameters::Knob1).getBool())
   {
-    // do something
+    std::cout << "Num nodes: " << outputField->vmesh()->num_nodes() << std::endl;
   }
   else
   {
-    // do something else
+    std::cout << "Num elements: " << outputField->vmesh()->num_elems() << std::endl;
   }
 
   AlgorithmOutput output;
