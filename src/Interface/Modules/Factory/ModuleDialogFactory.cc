@@ -71,6 +71,7 @@
 #include <Interface/Modules/Bundle/InsertFieldsIntoBundleDialog.h>
 #include <Interface/Modules/Bundle/GetFieldsFromBundleDialog.h>
 
+#include <Interface/Modules/Fields/PrintFieldInfoDialog.h>
 #include <boost/assign.hpp>
 #include <boost/functional/factory.hpp>
 #include <boost/foreach.hpp>
@@ -133,6 +134,7 @@ void ModuleDialogFactory::addDialogsToMakerMap1()
     ADD_MODULE_DIALOG(CalculateDistanceToFieldBoundary, CalculateDistanceToFieldBoundaryDialog)
     ADD_MODULE_DIALOG(MapFieldDataOntoElems, MapFieldDataOntoElemsDialog)
     ADD_MODULE_DIALOG(MapFieldDataOntoNodes, MapFieldDataOntoNodesDialog)
+    ADD_MODULE_DIALOG(PrintFieldInfo, PrintFieldInfoDialog)
   ;
 }
 
