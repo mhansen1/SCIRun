@@ -27,11 +27,13 @@
 #
 
 SET(Algorithms_Field_SRCS
+  PrintFieldInfoAlgo.cc
   ReportFieldInfoAlgorithm.cc
   InterfaceWithCleaverAlgorithm.cc
 )
 
 SET(Algorithms_Field_HEADERS
+  PrintFieldInfoAlgo.h
   ReportFieldInfoAlgorithm.h
   InterfaceWithCleaverAlgorithm.h
   share.h
