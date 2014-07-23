@@ -85,6 +85,7 @@ DEALINGS IN THE SOFTWARE.
 #include <Modules/Legacy/FiniteElements/BuildFEMatrix.h>
 #include <Modules/Basic/AsyncPortTestModule.h>
 #include <Modules/Basic/NeedToExecuteTester.h>
+#include <Modules/Fields/PrintFieldInfo.h>
 //#include <Modules/Fields/@ModuleName@.h>
 
 using namespace SCIRun::Dataflow::Networks;
@@ -145,6 +146,7 @@ void ModuleDescriptionLookup::addEssentialModules()
   addModuleDesc<MapFieldDataOntoElements>("Real ported module", "...");
   addModuleDesc<ClipFieldByFunction>("Real ported module", "...");
   
+  addModuleDesc<PrintFieldInfo>("Status", "Description");
   // insert module desc here
 }
 
