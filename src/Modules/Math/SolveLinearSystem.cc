@@ -84,8 +84,8 @@ void SolveLinearSystemModule::execute()
 
     auto method = get_state()->getValue(Variables::Method).getString();
     auto precond = get_state()->getValue(Variables::Preconditioner).getString();
-    algo().set_option(Variables::Method, method);
-    algo().set_option(Variables::Preconditioner, precond);
+    algo().setOption(Variables::Method, method);
+    algo().setOption(Variables::Preconditioner, precond);
 
     std::ostringstream ostr;
     ostr << "Running algorithm Parallel " << method << " Solver with tolerance " << tolerance << " and maximum iterations " << maxIterations;

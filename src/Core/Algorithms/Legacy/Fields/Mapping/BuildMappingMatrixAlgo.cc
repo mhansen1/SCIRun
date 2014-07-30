@@ -39,7 +39,7 @@ const AlgorithmParameterName BuildMappingMatrixAlgo::Method("Method");
 BuildMappingMatrixAlgo::BuildMappingMatrixAlgo()
 {
   addParameter(MaxDistance, -1.0);
-  add_option(Method, "interpolateddata","interpolateddata|closestdata|singledestination");
+  addOption(Method, "interpolateddata","interpolateddata|closestdata|singledestination");
 }
 
 bool BuildMappingMatrixAlgo::runImpl(FieldHandle source, FieldHandle destination, MatrixHandle& output) const
@@ -563,7 +563,7 @@ run(FieldHandle source, FieldHandle destination, MatrixHandle& output)
   VField* sfield = source->vfield();
   VField* dfield = destination->vfield();
 
-  std::string method = get_option("method");
+  std::string method = getOption("method");
   int sbasis_order = sfield->basis_order();
   int dbasis_order = dfield->basis_order();
   

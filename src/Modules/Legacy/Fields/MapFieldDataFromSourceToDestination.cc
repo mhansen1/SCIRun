@@ -109,14 +109,14 @@ void MapFieldDataFromSourceToDestination::execute()
     std::string interpolation_basis = state->getValue(InterpolationBasis).getString();
     if (interpolation_basis == "linear")
     {
-      algo().set_option(Parameters::MappingMethod, "interpolateddata");
+      algo().setOption(Parameters::MappingMethod, "interpolateddata");
     }
     else
     {
       if (state->getValue(map_source_to_single_dest).getBool())
-        algo().set_option(Parameters::MappingMethod, "singledestination");
+        algo().setOption(Parameters::MappingMethod, "singledestination");
       else
-        algo().set_option(Parameters::MappingMethod, "closestdata");
+        algo().setOption(Parameters::MappingMethod, "closestdata");
     }
 
     setAlgoDoubleFromState(Parameters::DefaultValue);

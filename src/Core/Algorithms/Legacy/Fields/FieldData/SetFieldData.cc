@@ -600,7 +600,7 @@ run(FieldHandle input, MatrixHandle data, FieldHandle& output)
     /// do we have a scalar, vector, or tensor
     if (ncols == 1) 
     {
-      std::string scalardatatype = get_option("scalardatatype");     
+      std::string scalardatatype = getOption("scalardatatype");     
       fi.set_data_type(scalardatatype);
       found = true;
     }
@@ -644,7 +644,7 @@ run(FieldHandle input, MatrixHandle data, FieldHandle& output)
     if (data->nrows() == 1) 
     {
       std::string scalardatatype;
-      get_option("scalardatatype",scalardatatype);
+      getOption("scalardatatype",scalardatatype);
       
       fi.set_data_type(scalardatatype);
     }
@@ -689,7 +689,7 @@ run(FieldHandle input, MatrixHandle data, FieldHandle& output)
       if (data->ncols() == 1) 
       {
         std::string scalardatatype;
-        get_option("scalardatatype",scalardatatype);
+        getOption("scalardatatype",scalardatatype);
         
         fi.set_data_type(scalardatatype);
       }
@@ -714,7 +714,7 @@ run(FieldHandle input, MatrixHandle data, FieldHandle& output)
       if (data->nrows() == 1) 
       {
         std::string scalardatatype;
-        get_option("scalardatatype",scalardatatype);
+        getOption("scalardatatype",scalardatatype);
         
         fi.set_data_type(scalardatatype);
       }
@@ -1043,7 +1043,7 @@ run(FieldHandle input, NrrdDataHandle data, FieldHandle& output)
         {
           output_datatype = "Scalar";
           std::string scalardatatype;
-          get_option("scalardatatype",scalardatatype);
+          getOption("scalardatatype",scalardatatype);
           fi.set_data_type(scalardatatype);
         } 
         else if ( data->nrrd_->axis[0].size == 3 ) 

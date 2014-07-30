@@ -73,14 +73,14 @@ BuildMappingMatrix::execute()
     std::string interpolation_basis = state->getValue(BuildMappingMatrixAlgo::Method).getString();
     if (interpolation_basis == "linear") 
     {
-      algo().set_option(BuildMappingMatrixAlgo::Method, "interpolateddata");
+      algo().setOption(BuildMappingMatrixAlgo::Method, "interpolateddata");
     }
     else
     {
       if (state->getValue(MapSourceToSingleDestination).getBool())
-        algo().set_option(BuildMappingMatrixAlgo::Method, "singledestination");
+        algo().setOption(BuildMappingMatrixAlgo::Method, "singledestination");
       else                
-        algo().set_option(BuildMappingMatrixAlgo::Method, "closestdata");
+        algo().setOption(BuildMappingMatrixAlgo::Method, "closestdata");
     }
     
     setAlgoDoubleFromState(BuildMappingMatrixAlgo::MaxDistance);

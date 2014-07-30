@@ -61,7 +61,7 @@ MapFieldDataFromElemToNodeT(const MapFieldDataFromElemToNodeAlgo *algo,
                             FieldHandle& output)
 {
 			    
-  std::string method = algo->get_option(MapFieldDataFromElemToNodeAlgo::Method);
+  std::string method = algo->getOption(MapFieldDataFromElemToNodeAlgo::Method);
 
   VField *ifield = input->vfield();
   VField *ofield = output->vfield();
@@ -226,7 +226,7 @@ MapFieldDataFromElemToNodeT(const MapFieldDataFromElemToNodeAlgo *algo,
 
 MapFieldDataFromElemToNodeAlgo::MapFieldDataFromElemToNodeAlgo()
 {
-  add_option(Method,"Interpolation","Interpolation|Average|Min|Max|Sum|Median|None");
+  addOption(Method,"Interpolation","Interpolation|Average|Min|Max|Sum|Median|None");
 }
 
 AlgorithmParameterName MapFieldDataFromElemToNodeAlgo::Method("Method");

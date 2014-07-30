@@ -474,12 +474,12 @@ void Module::setAlgoDoubleFromState(AlgorithmParameterName name)
 
 void Module::setAlgoOptionFromState(AlgorithmParameterName name)
 {
-  algo().set_option(name, get_state()->getValue(name).getString());
+  algo().setOption(name, get_state()->getValue(name).getString());
 }
 
 void Module::setStateStringFromAlgoOption(AlgorithmParameterName name)
 {
-  get_state()->setValue(name, algo().get_option(name));
+  get_state()->setValue(name, algo().getOption(name));
 }
 
 ModuleInterface::ExecutionState Module::executionState() const
