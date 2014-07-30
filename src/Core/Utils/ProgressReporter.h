@@ -56,14 +56,14 @@ namespace SCIRun {
         public:
           virtual ~ProgressReporter();
 
-          virtual void report_start(const std::string& tag) const = 0;
-          virtual void report_end() const = 0;
+          virtual void reportStart(const std::string& tag) const = 0;
+          virtual void reportEnd() const = 0;
 
           // Execution time progress.
           // Percent is number between 0.0-1.0
-          virtual void update_progress(double percent) const = 0;
+          virtual void updateProgress(double percent) const = 0;
           template <typename T1, typename T2>
-          inline void update_progress_max(T1 current, T2 max) const { update_progress(((double)current) / max); }
+          inline void update_progress_max(T1 current, T2 max) const { updateProgress(((double)current) / max); }
 
         protected:
           /// @todo: replace with C++11 atomic<int>?

@@ -84,7 +84,7 @@ ApplyMappingMatrixT(const ApplyMappingMatrixAlgo* algo,
   input->get_weighted_value(val,&(columns[rr]),&(vals[rr]),ss);
 
   output->set_value(val,idx);
-  cnt++; if (cnt==400) {algo->update_progress((double)idx/m); cnt=0;}  
+  cnt++; if (cnt==400) {algo->updateProgress((double)idx/m); cnt=0;}  
  }
 
   return true;

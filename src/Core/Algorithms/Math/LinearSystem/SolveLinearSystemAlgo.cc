@@ -314,7 +314,7 @@ bool SolveLinearSystemCGAlgo::parallel(ParallelLinearAlgebra& PLA, SolverInputs&
     if (cnt == 20)
     {
       cnt = 0;
-      algo_->update_progress((log_orig-log(error))/log_scale);
+      algo_->updateProgress((log_orig-log(error))/log_scale);
     }
   }
 
@@ -534,7 +534,7 @@ parallel(ParallelLinearAlgebra& PLA, SolverInputs& matrices) const
     if (cnt == 20)
     {
       cnt = 0;
-      algo_->update_progress((log_orig-log(error))/log_scale);
+      algo_->updateProgress((log_orig-log(error))/log_scale);
     }
   }
 
@@ -885,7 +885,7 @@ parallel(ParallelLinearAlgebra& PLA, SolverInputs& matrices) const
     if (ucnt == 20)
     {
       ucnt = 0;
-      algo_->update_progress((log_orig-log(error))/log_scale);
+      algo_->updateProgress((log_orig-log(error))/log_scale);
     }
   }
 
@@ -1008,7 +1008,7 @@ parallel(ParallelLinearAlgebra& PLA, SolverInputs& matrices) const
 #endif
       }
       PLA.wait();
-      algo_->update_progress(1);
+      algo_->updateProgress(1);
       return (true);
     }
 
@@ -1048,7 +1048,7 @@ parallel(ParallelLinearAlgebra& PLA, SolverInputs& matrices) const
     if (cnt == 20)
     {
       cnt = 0;
-      algo_->update_progress((log_orig-log(error))/log_scale);
+      algo_->updateProgress((log_orig-log(error))/log_scale);
     }
   }
 
@@ -1063,7 +1063,7 @@ parallel(ParallelLinearAlgebra& PLA, SolverInputs& matrices) const
   }
   PLA.wait();
 
-  algo_->update_progress(1);
+  algo_->updateProgress(1);
   return (true);
 }
 

@@ -59,7 +59,7 @@ EigenMatrixFromScirunAsciiFormatConverter::EigenMatrixFromScirunAsciiFormatConve
 MatrixHandle EigenMatrixFromScirunAsciiFormatConverter::make(const std::string& matFile)
 {
   if (reporter_)
-    reporter_->update_progress(0.01);
+    reporter_->updateProgress(0.01);
   if (fileContainsString(matFile, "DenseMatrix"))
     return makeDense(matFile);
   if (fileContainsString(matFile, "SparseRowMatrix"))
@@ -75,7 +75,7 @@ SparseRowMatrixHandle EigenMatrixFromScirunAsciiFormatConverter::makeSparse(cons
 {
   SparseData data = convertRaw(parseSparseMatrixString(getMatrixContentsLine(readFile(matFile)).get()).get());
   if (reporter_)
-    reporter_->update_progress(0.7);
+    reporter_->updateProgress(0.7);
   SparseRowMatrixHandle mat(boost::make_shared<SparseRowMatrix>(data.get<0>(), data.get<1>()));
 
   typedef Eigen::Triplet<double> T;
@@ -103,14 +103,14 @@ SparseRowMatrixHandle EigenMatrixFromScirunAsciiFormatConverter::makeSparse(cons
   mat->setFromTriplets(tripletList.begin(), tripletList.end());
   mat->makeCompressed();
   if (reporter_)
-    reporter_->update_progress(1);
+    reporter_->updateProgress(1);
   return mat;
 }
 
 boost::optional<std::string> EigenMatrixFromScirunAsciiFormatConverter::getMatrixContentsLine(const std::string& matStr)
 {
   if (reporter_)
-    reporter_->update_progress(0.2);
+    reporter_->updateProgress(0.2);
   
   std::istringstream reader(matStr);
   std::string line;
@@ -128,7 +128,7 @@ std::string EigenMatrixFromScirunAsciiFormatConverter::readFile(const std::strin
   std::string matStr((std::istreambuf_iterator<char>(matFile)),
     std::istreambuf_iterator<char>());
   if (reporter_)
-    reporter_->update_progress(0.1);
+    reporter_->updateProgress(0.1);
   return matStr;
 }
 
@@ -197,7 +197,7 @@ boost::optional<EigenMatrixFromScirunAsciiFormatConverter::RawSparseData> EigenM
   if (what.size() == 7)
   {
     if (reporter_)
-      reporter_->update_progress(0.4);
+      reporter_->updateProgress(0.4);
     return boost::make_tuple(what[1].str(), what[2].str(), what[3].str(), what[4].str(), what[5].str(), what[6].str());
   }
   return boost::optional<RawSparseData>();
@@ -206,7 +206,7 @@ boost::optional<EigenMatrixFromScirunAsciiFormatConverter::RawSparseData> EigenM
 EigenMatrixFromScirunAsciiFormatConverter::SparseData EigenMatrixFromScirunAsciiFormatConverter::convertRaw(const RawSparseData& data)
 {
   if (reporter_)
-    reporter_->update_progress(0.5);
+    reporter_->updateProgress(0.5);
   return boost::make_tuple(
     boost::lexical_cast<int>(data.get<0>()),
     boost::lexical_cast<int>(data.get<1>()),

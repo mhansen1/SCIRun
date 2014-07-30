@@ -133,7 +133,7 @@ bool AddKnownsToLinearSystemAlgo::run(SparseRowMatrixHandle stiff,
 		if (cnt == 10)
 		{
 			cnt = 0;
-			update_progress((double)p/m);
+			updateProgress((double)p/m);
 		}
 	}
   
@@ -155,7 +155,7 @@ bool AddKnownsToLinearSystemAlgo::run(SparseRowMatrixHandle stiff,
 		if (cnt == 10)
 		{
 			cnt = 0;
-			update_progress((double)p/m);
+			updateProgress((double)p/m);
 		}
 	}
   

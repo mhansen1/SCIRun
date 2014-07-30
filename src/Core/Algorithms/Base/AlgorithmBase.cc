@@ -154,13 +154,13 @@ AlgorithmStatusReporter::UpdaterFunc AlgorithmStatusReporter::defaultUpdaterFunc
 ScopedAlgorithmStatusReporter::ScopedAlgorithmStatusReporter(const AlgorithmStatusReporter* asr, const std::string& tag) : asr_(asr) 
 {
   if (asr_)
-    asr_->report_start(tag);
+    asr_->reportStart(tag);
 }
 
 ScopedAlgorithmStatusReporter::~ScopedAlgorithmStatusReporter()
 {
   if (asr_)
-    asr_->report_end();
+    asr_->reportEnd();
 }
 
 DatatypeHandle& AlgorithmData::operator[](const Name& name)

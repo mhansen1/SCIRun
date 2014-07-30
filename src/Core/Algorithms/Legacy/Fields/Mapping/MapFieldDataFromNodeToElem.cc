@@ -108,7 +108,7 @@ MapFieldDataFromNodeToElemT(const MapFieldDataFromNodeToElemAlgo* algo,
       if (cnt==1000)
       {
         cnt=0; c+=1000;
-	algo->update_progress(c/sz);
+	algo->updateProgress(c/sz);
       }
     }
   }
@@ -135,7 +135,7 @@ MapFieldDataFromNodeToElemT(const MapFieldDataFromNodeToElemAlgo* algo,
       if (cnt==1000)
       {
         cnt=0; c+=1000;
-        algo->update_progress(c/sz);
+        algo->updateProgress(c/sz);
       }
     }
   }
@@ -162,7 +162,7 @@ MapFieldDataFromNodeToElemT(const MapFieldDataFromNodeToElemAlgo* algo,
       if (cnt==1000)
       {
         cnt=0; c+=1000;
-        algo->update_progress(c/sz);
+        algo->updateProgress(c/sz);
       }
     }
   }
@@ -185,7 +185,7 @@ MapFieldDataFromNodeToElemT(const MapFieldDataFromNodeToElemAlgo* algo,
       if (cnt==1000)
       {
         cnt=0; c+=1000;
-	algo->update_progress(c/sz);
+	algo->updateProgress(c/sz);
       }
     }
   }
@@ -209,7 +209,7 @@ MapFieldDataFromNodeToElemT(const MapFieldDataFromNodeToElemAlgo* algo,
       if (cnt==1000)
       {
         cnt=0; c+=1000;
-	algo->update_progress(c/sz);
+	algo->updateProgress(c/sz);
       }
     }
   } else return false;
