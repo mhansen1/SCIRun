@@ -3,10 +3,10 @@
 
    The MIT License
 
-   Copyright (c) 2009 Scientific Computing and Imaging Institute,
+   Copyright (c) 2012 Scientific Computing and Imaging Institute,
    University of Utah.
 
-   
+   License for the specific language governing rights and limitations under
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
    to deal in the Software without restriction, including without limitation
@@ -26,29 +26,29 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-//#ifndef MODULES_FIELDS_FIELDTOMESH_H
-//#define MODULES_FIELDS_FIELDTOMESH_H
-//
-//#include <Dataflow/Network/Module.h>
-//#include <Modules/Fields/share.h>
-//
-//namespace SCIRun {
-//  namespace Modules {
-//    namespace Fields {
-//
-//class SCISHARE FieldToMesh : public SCIRun::Dataflow::Networks::Module,
-//  public Has1InputPort<FieldPortTag>,
-//  public Has1OutputPort<MeshPortTag>
-//{
-//  public:
-//    FieldToMesh();
-//
-//    virtual void execute();
-//
-//    INPUT_PORT(0, Field, LegacyField);
-//    OUTPUT_PORT(0, Mesh, LegacyMesh);
-//};
-//
-//}}}
-//
-//#endif
+#ifndef INTERFACE_MODULES_MapFieldDataOntoElemsDialog_H
+#define INTERFACE_MODULES_MapFieldDataOntoElemsDialog_H
+
+#include "Interface/Modules/Fields/ui_MapFieldDataOntoElems.h"
+#include <Interface/Modules/Base/ModuleDialogGeneric.h>
+#include <Interface/Modules/Fields/share.h>
+
+namespace SCIRun {
+namespace Gui {
+
+class SCISHARE MapFieldDataOntoElemsDialog : public ModuleDialogGeneric,
+  public Ui::MapFieldDataOntoElems
+{
+	Q_OBJECT
+
+public:
+  MapFieldDataOntoElemsDialog(const std::string& name,
+    SCIRun::Dataflow::Networks::ModuleStateHandle state,
+    QWidget* parent = 0);
+  virtual void pull();
+};
+
+}
+}
+
+#endif

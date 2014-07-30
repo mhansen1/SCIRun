@@ -3,10 +3,10 @@
 
    The MIT License
 
-   Copyright (c) 2009 Scientific Computing and Imaging Institute,
+   Copyright (c) 2012 Scientific Computing and Imaging Institute,
    University of Utah.
 
-   
+   License for the specific language governing rights and limitations under
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
    to deal in the Software without restriction, including without limitation
@@ -26,19 +26,37 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-//#include <Core/Datatypes/Legacy/Field/Field.h>
-//#include <Core/Datatypes/Legacy/Field/Mesh.h>
-//#include <Modules/Fields/FieldToMesh.h>
-//
-//using namespace SCIRun::Dataflow::Networks;
-//using namespace SCIRun::Modules::Fields;
-//
-//FieldToMesh::FieldToMesh() : Module(ModuleLookupInfo("FieldToMesh", "NewField", "SCIRun"), false)
-//{
-//}
-//
-//void FieldToMesh::execute()
-//{
-//  auto field = getRequiredInput(Field);
-//  sendOutput(Mesh, field->mesh());
-//}
+#include <Modules/Fields/@ModuleName@.h>
+#include <Core/Datatypes/Legacy/Field/Field.h>
+#include <Core/Algorithms/Field/@ModuleName@Algo.h>
+
+using namespace SCIRun::Modules::Fields;
+using namespace SCIRun::Core::Datatypes;
+using namespace SCIRun::Dataflow::Networks;
+using namespace SCIRun::Core::Algorithms::Fields;
+
+const ModuleLookupInfo @ModuleName@::staticInfo_("@ModuleName@", "NewField", "SCIRun");
+
+@ModuleName@::@ModuleName@() : Module(staticInfo_)
+{
+  INITIALIZE_PORT(InputField);
+  INITIALIZE_PORT(OutputField);
+}
+
+void @ModuleName@::setStateDefaults()
+{
+  auto state = get_state();
+  setStateBoolFromAlgo(Parameters::Knob1);
+  setStateDoubleFromAlgo(Parameters::Knob2);
+}
+
+void @ModuleName@::execute()
+{
+  auto field = getRequiredInput(InputField);
+
+  setAlgoBoolFromState(Parameters::Knob1);
+  setAlgoDoubleFromState(Parameters::Knob2);
+  auto output = algo().run(withInputData((InputField, field)));
+
+  sendOutputFromAlgorithm(OutputField, output);
+}
