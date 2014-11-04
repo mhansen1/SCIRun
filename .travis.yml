@@ -8,7 +8,7 @@ os:
 compiler:
 - clang
 # TODO: gcc chokes on a boost pthread usage, disabling for now.
-# - gcc 
+- gcc 
 
 # check environment (copied from libgit2sharp)
 before_install:
