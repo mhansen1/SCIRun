@@ -36,15 +36,6 @@ DEALINGS IN THE SOFTWARE.
 using namespace SCIRun::Dataflow::Networks;
 using namespace SCIRun::Core::Datatypes;
 
-namespace
-{
-  enum IdSentinelValues
-  {
-    UNSET = -2,
-    SET_ONCE = -1
-  };
-}
-
 SimpleSink::SimpleSink() :
   hasChanged_(false),
   checkForNewDataOnSetting_(false)
@@ -100,16 +91,16 @@ void SimpleSink::setData(DatatypeHandle data)
   {
     if (data)
     {
-      //std::cout << "\tSink.setData hasChanged is " << hasChanged_ << std::endl;
-      //std::cout << "\tSink.setData old id is " << strong->id() << " new id is " << data->id() << std::endl;
+      std::cout << "\tSink.setData hasChanged is " << hasChanged_ << std::endl;
+      std::cout << "\tSink.setData old id is " << strong->id() << " new id is " << data->id() << std::endl;
       hasChanged_ = strong->id() != data->id();
-      //std::cout << "\tSink.setData hasChanged set to " << hasChanged_ << std::endl;
+      std::cout << "\tSink.setData hasChanged set to " << hasChanged_ << std::endl;
     }
   }
   else if (data)
   {
     hasChanged_ = true;
-    //std::cout << "\tSink.setData: no previous weakData, hasChanged set to " << hasChanged_ << std::endl;
+    std::cout << "\tSink.setData: no previous weakData, hasChanged set to " << hasChanged_ << std::endl;
   }
 
   weakData_ = data;
@@ -126,7 +117,7 @@ bool SimpleSink::hasChanged() const
 {
   bool val = hasChanged_;
   hasChanged_ = false;
-  //std::cout << "\tSink.hasChanged() returns " << val << ", hasChanged set to " << hasChanged_ << std::endl;
+  std::cout << "\tSink.hasChanged() returns " << val << ", hasChanged set to " << hasChanged_ << std::endl;
   return val;
 }
 

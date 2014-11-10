@@ -6,7 +6,7 @@
    Copyright (c) 2009 Scientific Computing and Imaging Institute,
    University of Utah.
 
-   
+
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
    to deal in the Software without restriction, including without limitation
@@ -85,16 +85,18 @@ void CreateLatVol::setStateDefaults()
 void
 CreateLatVol::execute()
 {
+  std::cout << "CLV::execute" << std::endl;
   auto ifieldhandleOption = getOptionalInput(InputField);
   auto sizeOption = getOptionalInput(LatVolSize);
-	
+
   //if (inputs_changed_ || size_x_.changed() || size_y_.changed() ||
   //    size_z_.changed() || padpercent_.changed() || data_at_.changed() ||
   //    element_size_.changed() || !oport_cached("Output Sample Field") )
   if (needToExecute())
   {
+    std::cout << "CLV::need to execute true" << std::endl;
     update_state(Executing);
-    
+
     if (sizeOption)
     {
       auto sizeMatrix = *sizeOption;
@@ -112,23 +114,23 @@ CreateLatVol::execute()
         int size3 = static_cast<int>((*sizeMatrix)(0,2));
         get_state()->setValue(XSize, size1);
         get_state()->setValue(YSize, size2);
-        get_state()->setValue(ZSize, size3);	
+        get_state()->setValue(ZSize, size3);
       }
       else
       {
         error("LatVol size matrix needs to have either one element or three elements");
         return;
-      }	
-    }	
+      }
+    }
 
     Point minb, maxb;
     DataTypeEnum datatype;
-		
+
     // Create blank mesh.
     VField::size_type sizex = std::max(2, get_state()->getValue(XSize).toInt());
     VField::size_type sizey = std::max(2, get_state()->getValue(YSize).toInt());
-    VField::size_type sizez = std::max(2, get_state()->getValue(ZSize).toInt());		
-		
+    VField::size_type sizez = std::max(2, get_state()->getValue(ZSize).toInt());
+
     if (!ifieldhandleOption)
     {
       datatype = SCALAR;
@@ -172,7 +174,7 @@ CreateLatVol::execute()
     if (dataAtLocation == "Nodes") basis_order = 1;
     else if (dataAtLocation == "Cells") basis_order = 0;
     else if (dataAtLocation == "None") basis_order = -1;
-    else 
+    else
     {
       error("Unsupported data_at location " + dataAtLocation + ".");
       return;

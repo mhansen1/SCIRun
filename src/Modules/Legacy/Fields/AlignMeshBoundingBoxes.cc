@@ -6,7 +6,7 @@
    Copyright (c) 2009 Scientific Computing and Imaging Institute,
    University of Utah.
 
-   
+
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
    to deal in the Software without restriction, including without limitation
@@ -45,12 +45,14 @@ AlignMeshBoundingBoxes::AlignMeshBoundingBoxes() :
 
 void AlignMeshBoundingBoxes::execute()
 {
+  std::cout << "AMBB::execute" << std::endl;
   FieldHandle ifield = getRequiredInput(InputField);
   FieldHandle objfield = getRequiredInput(AlignmentField);
 
   // inputs_changed_ || !oport_cached("Output") || !oport_cached("Transform")
   if (needToExecute())
   {
+    std::cout << "AMBB::need to execute true" << std::endl;
     update_state(Executing);
 
     auto output = algo().run_generic(withInputData((InputField, ifield)(AlignmentField, objfield)));

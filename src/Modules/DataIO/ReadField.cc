@@ -86,6 +86,7 @@ bool ReadFieldModule::call_importer(const std::string& filename, FieldHandle& fH
 void
 ReadFieldModule::execute()
 {
+  std::cout << "RF::execute" << std::endl;
 #ifdef SCIRUN4_CODE_TO_BE_ENABLED_LATER
   if (gui_types_.changed() || gui_filetype_.changed()) inputs_changed_ = true;
 #endif

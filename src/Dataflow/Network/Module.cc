@@ -175,7 +175,7 @@ bool Module::do_execute() throw()
   //LOG_DEBUG("MODULE FINISHED: " << id_.id_);
   setExecutionState(ModuleInterface::Completed);
   resetStateChanged();
-  //std::cout << id_ << " inputsChanged set to false post-execute" << std::endl;
+  std::cout << "\t\t___" << id_ << " inputsChanged set to false post-execute" << std::endl;
   inputsChanged_ = false;
   executeEnds_(id_);
   return returnCode;
@@ -241,9 +241,9 @@ DatatypeHandleOption Module::get_input_handle(const PortId& id)
   }
 
   {
-    Log::get() << DEBUG_LOG << id_ << " :: inputsChanged is " << inputsChanged_ << ", querying port for value." << std::endl;
+    std::cout << id_ << " :: inputsChanged is " << inputsChanged_ << ", querying port " << port->id() << " for value." << std::endl;
     inputsChanged_ = inputsChanged_ || port->hasChanged();
-    Log::get() << DEBUG_LOG << id_ << ":: inputsChanged is now " << inputsChanged_ << std::endl;
+    std::cout << id_ << ":: inputsChanged is now " << inputsChanged_ << std::endl;
   }
 
   auto data = port->getData();
