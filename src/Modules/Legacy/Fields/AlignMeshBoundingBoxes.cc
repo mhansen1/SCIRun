@@ -52,7 +52,7 @@ void AlignMeshBoundingBoxes::execute()
   // inputs_changed_ || !oport_cached("Output") || !oport_cached("Transform")
   if (needToExecute())
   {
-    std::cout << "AMBB::need to execute true" << std::endl;
+    std::cout << "\t\t~~~~~~~~~~~~~~~~~~~~~~~AMBB::need to execute true" << std::endl;
     update_state(Executing);
 
     auto output = algo().run_generic(withInputData((InputField, ifield)(AlignmentField, objfield)));

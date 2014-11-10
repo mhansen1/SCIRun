@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
 
@@ -175,7 +176,7 @@ bool Module::do_execute() throw()
   //LOG_DEBUG("MODULE FINISHED: " << id_.id_);
   setExecutionState(ModuleInterface::Completed);
   resetStateChanged();
-  std::cout << "\t\t___" << id_ << " inputsChanged set to false post-execute" << std::endl;
+  //std::cout << "\t\t___" << id_ << " inputsChanged set to false post-execute" << std::endl;
   inputsChanged_ = false;
   executeEnds_(id_);
   return returnCode;
@@ -241,9 +242,10 @@ DatatypeHandleOption Module::get_input_handle(const PortId& id)
   }
 
   {
-    std::cout << id_ << " :: inputsChanged is " << inputsChanged_ << ", querying port " << port->id() << " for value." << std::endl;
-    inputsChanged_ = inputsChanged_ || port->hasChanged();
-    std::cout << id_ << ":: inputsChanged is now " << inputsChanged_ << std::endl;
+    //std::cout << id_ << " :: inputsChanged is " << inputsChanged_ << ", querying port " << port->id() << " for value." << std::endl;
+    // NOTE: don't use short-circuited boolean OR here, we need to call hasChanged each time since it updates the port's cache flag.
+    inputsChanged_ = port->hasChanged() || inputsChanged_;
+    //std::cout << id_ << ":: inputsChanged is now " << inputsChanged_ << std::endl;
   }
 
   auto data = port->getData();
@@ -264,7 +266,9 @@ std::vector<DatatypeHandleOption> Module::get_dynamic_input_handles(const PortId
 
   {
     LOG_DEBUG(id_ << " :: inputsChanged is " << inputsChanged_ << ", querying port for value.");
-    inputsChanged_ = inputsChanged_ || std::any_of(portsWithName.begin(), portsWithName.end(), [](InputPortHandle input) { return input->hasChanged(); });
+    // NOTE: don't use short-circuited boolean OR here, we need to call hasChanged each time since it updates the port's cache flag.
+    bool startingVal = inputsChanged_;
+    inputsChanged_ = std::accumulate(portsWithName.begin(), portsWithName.end(), startingVal, [](bool acc, InputPortHandle input) { return input->hasChanged() || acc; });
     LOG_DEBUG(id_ << ":: inputsChanged is now " << inputsChanged_);
   }
 
