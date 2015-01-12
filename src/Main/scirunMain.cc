@@ -37,8 +37,8 @@ using namespace SCIRun::Gui;
 using namespace SCIRun::Core::Console;
 
 
-// If not WIN32 use this main()/entry point.
-#ifndef WIN32
+// If console needs to be shown.
+#ifndef WINDOWS_NO_CONSOLE
 int main(int argc, const char* argv[])
 {
   Application::Instance().readCommandLine(argc, argv);
@@ -51,21 +51,12 @@ int main(int argc, const char* argv[])
   return ConsoleApplication::run(argc, argv);
 #endif
 }
-#endif // End of main for non-Windows.
 
-// If building on WIN32, use this entry point.
-#ifdef WIN32
+// If building on WIN32 and not showing console, use this entry point.
+#else
 #include <windows.h>
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-
-#ifdef SCIRUN_SHOW_CONSOLE 
-   AllocConsole();
-   freopen("CONIN$","r",stdin);
-   freopen("CONOUT$","w",stdout);
-   freopen("CONOUT$","w",stderr);  
-#endif
- 
   const char *argv[] = {GetCommandLine()};
   int argc = 1;
   Application::Instance().readCommandLine(argc, argv);
@@ -78,4 +69,4 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
   return ConsoleApplication::run(argc, argv);
 #endif
 }
-#endif // End of main for Windows.
+#endif // End if for Windows main.
