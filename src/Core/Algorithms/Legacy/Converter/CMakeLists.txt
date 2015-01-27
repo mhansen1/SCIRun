@@ -36,12 +36,14 @@ SET(Core_Algorithms_Legacy_Converter_SRCS
   #ConvertToNrrd.cc
   #MatricesToDipoleField.cc
   #ConvertBundleToField.cc
+  MatrixToString.cc
 )
 
 SET(Core_Algorithms_Legacy_Converter_HEADERS
   ConverterAlgo.h
   NrrdToField.h
   FieldToNrrd.h
+  MatrixToString.h
 )
 
 SCIRUN_ADD_LIBRARY(Core_Algorithms_Legacy_Converter
